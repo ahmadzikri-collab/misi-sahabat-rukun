@@ -12,10 +12,12 @@ import { KantinPintarLevel } from './components/levels/KantinPintarLevel';
 import { StudioKreatifLevel } from './components/levels/StudioKreatifLevel';
 import { LapanganPersahabatanLevel } from './components/levels/LapanganPersahabatanLevel';
 import { TeacherDashboard } from './components/TeacherDashboard';
+import { TeacherGoogleLoginModal } from './components/TeacherGoogleLoginModal';
 import { StudentLogin } from './components/StudentLogin';
 import { GuideDocModal } from './components/GuideDocModal';
 import { gameDb } from './services/db';
-import { cloudDb } from './services/firebase';
+import { cloudDb, auth, onAuthTeacherChanged, signOutTeacher } from './services/firebase';
+import { User } from 'firebase/auth';
 import { StudentProfile, LevelProgress } from './types/game';
 
 type AppView =
@@ -34,6 +36,8 @@ export default function App() {
   const [levelProgress, setLevelProgress] = useState<Record<string, LevelProgress>>({});
   const [levelUnlocks, setLevelUnlocks] = useState<Record<string, boolean>>(gameDb.getLevelUnlockSettings());
   const [isGuideModalOpen, setIsGuideModalOpen] = useState(false);
+  const [teacherUser, setTeacherUser] = useState<User | null>(auth.currentUser);
+  const [isTeacherLoginModalOpen, setIsTeacherLoginModalOpen] = useState(false);
 
   // Initial Cloud Sync and Real-time Level Unlocks with Firebase
   useEffect(() => {
@@ -69,9 +73,14 @@ export default function App() {
       }
     });
 
+    const unsubAuth = onAuthTeacherChanged((u) => {
+      setTeacherUser(u);
+    });
+
     return () => {
       unsubUnlocks();
       unsubSecurity();
+      unsubAuth();
     };
   }, []);
 
@@ -91,7 +100,11 @@ export default function App() {
   };
 
   const handleRequestTeacherAccess = () => {
-    setCurrentView('teacher');
+    if (teacherUser && gameDb.isAuthorizedTeacherEmail(teacherUser.email)) {
+      setCurrentView('teacher');
+    } else {
+      setIsTeacherLoginModalOpen(true);
+    }
   };
 
   const handleUpdateLevelUnlocks = useCallback((newUnlocks: Record<string, boolean>) => {
@@ -258,9 +271,27 @@ export default function App() {
             onUpdateLevelUnlocks={handleUpdateLevelUnlocks}
             onBackToGame={() => setCurrentView('map')}
             onOpenGuideModal={() => setIsGuideModalOpen(true)}
+            teacherEmail={teacherUser?.email}
+            teacherName={teacherUser?.displayName}
+            teacherPhoto={teacherUser?.photoURL}
+            onLogout={async () => {
+              await signOutTeacher();
+              setTeacherUser(null);
+              setCurrentView('welcome');
+            }}
           />
         )}
       </main>
+
+      {/* Modal Login Khusus Akun Google Guru (Firebase Authentication) */}
+      <TeacherGoogleLoginModal
+        isOpen={isTeacherLoginModalOpen}
+        onClose={() => setIsTeacherLoginModalOpen(false)}
+        onSuccess={() => {
+          setIsTeacherLoginModalOpen(false);
+          setCurrentView('teacher');
+        }}
+      />
 
       {/* Developer & Teacher Character Guide Documentation Modal */}
       <GuideDocModal

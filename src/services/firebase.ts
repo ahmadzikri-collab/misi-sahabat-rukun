@@ -134,6 +134,10 @@ export async function signOutTeacher(): Promise<void> {
   }
 }
 
+export function onAuthTeacherChanged(callback: (user: User | null) => void): () => void {
+  return onAuthStateChanged(auth, callback);
+}
+
 // Firestore operations for Game Data
 export const cloudDb = {
   // Level Unlocks
