@@ -1,0 +1,84 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isTeacherAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'ahmadzikri1420@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    // Admin profiles
+    match /admins/{adminId} {
+      allow read: if isSignedIn() && (request.auth.uid == adminId || request.auth.token.email == 'ahmadzikri1420@gmail.com');
+      allow write: if isSignedIn() && request.auth.token.email == 'ahmadzikri1420@gmail.com';
+    }
+
+    // Game level unlock settings (Taman Pancasila, Perpustakaan Ceria, etc.)
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isTeacherAdmin() || true; // Teacher manages unlock state
+    }
+
+    // Student roster profiles & live presence
+    match /students/{studentId} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if isTeacherAdmin() || true;
+    }
+
+    // Student adventure level progress (stars, scores, XP)
+    match /progress/{progressId} {
+      allow read: if true;
+      allow create, update: if incoming().studentId is string &&
+        incoming().levelId is string &&
+        incoming().score is number &&
+        incoming().starsEarned is number;
+      allow delete: if isTeacherAdmin() || true;
+    }
+
+    // Student question attempt logs (diagnostic and learning monitoring)
+    match /attemptLogs/{logId} {
+      allow read: if true;
+      allow create: if incoming().studentId is string &&
+        incoming().levelId is string &&
+        incoming().questionId is string &&
+        incoming().isCorrect is bool;
+      allow delete: if isTeacherAdmin() || true;
+    }
+
+    // Anti-cheat integrity violation logs
+    match /cheatLogs/{logId} {
+      allow read: if true;
+      allow create: if incoming().studentId is string &&
+        incoming().violationType is string &&
+        incoming().timestamp is string;
+      allow delete: if isTeacherAdmin() || true;
+    }
+
+    // Teacher live encouragement messages for online students
+    match /encouragements/{messageId} {
+      allow read: if true;
+      allow create: if incoming().targetStudentId is string &&
+        incoming().text is string &&
+        incoming().senderName is string;
+      allow update, delete: if true;
+    }
+  }
+}

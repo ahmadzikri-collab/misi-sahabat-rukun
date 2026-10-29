@@ -1,0 +1,161 @@
+{
+  "entities": {
+    "Admin": {
+      "title": "Admin",
+      "description": "Teacher/Admin privileged user document",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "maxLength": 100 },
+        "role": { "type": "string", "maxLength": 20 },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["email", "role"]
+    },
+    "LevelUnlockSettings": {
+      "title": "LevelUnlockSettings",
+      "description": "Global lock/unlock configuration for all game mission areas controlled by the teacher",
+      "type": "object",
+      "properties": {
+        "tamanPancasila": { "type": "boolean" },
+        "perpustakaanCeria": { "type": "boolean" },
+        "kantinPintar": { "type": "boolean" },
+        "studioKreatif": { "type": "boolean" },
+        "lapanganPersahabatan": { "type": "boolean" },
+        "updatedAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["tamanPancasila", "perpustakaanCeria", "kantinPintar", "studioKreatif", "lapanganPersahabatan"]
+    },
+    "SecuritySettings": {
+      "title": "SecuritySettings",
+      "description": "Teacher dashboard PIN and authorized Google emails",
+      "type": "object",
+      "properties": {
+        "teacherPin": { "type": "string", "maxLength": 32 },
+        "authorizedEmails": { "type": "array", "items": { "type": "string" } },
+        "updatedAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["teacherPin"]
+    },
+    "StudentProfile": {
+      "title": "StudentProfile",
+      "description": "Profile data for elementary school Grade 2 students in MISI SAHABAT RUKUN",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "studentCode": { "type": "string", "maxLength": 32 },
+        "classCode": { "type": "string", "maxLength": 32 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "nickname": { "type": "string", "maxLength": 50 },
+        "avatarStyle": { "type": "string", "maxLength": 32 },
+        "createdAt": { "type": "string", "maxLength": 50 },
+        "lastActive": { "type": "string", "maxLength": 50 },
+        "isOnline": { "type": "boolean" },
+        "currentActivity": { "type": "string", "maxLength": 100 }
+      },
+      "required": ["id", "studentCode", "classCode", "displayName", "nickname"]
+    },
+    "LevelProgress": {
+      "title": "LevelProgress",
+      "description": "Student score, stars, and completion state per adventure level",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "maxLength": 64 },
+        "levelId": { "type": "string", "maxLength": 64 },
+        "status": { "type": "string", "maxLength": 32 },
+        "starsEarned": { "type": "number" },
+        "score": { "type": "number" },
+        "xpEarned": { "type": "number" },
+        "attemptsCount": { "type": "number" },
+        "completedAt": { "type": "string", "maxLength": 50 },
+        "lastPlayedAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["studentId", "levelId", "status", "starsEarned", "score"]
+    },
+    "StudentAttemptLog": {
+      "title": "StudentAttemptLog",
+      "description": "Individual question attempt and diagnostic answer log for teacher monitoring",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "studentId": { "type": "string", "maxLength": 64 },
+        "studentName": { "type": "string", "maxLength": 100 },
+        "classCode": { "type": "string", "maxLength": 32 },
+        "levelId": { "type": "string", "maxLength": 64 },
+        "questionId": { "type": "string", "maxLength": 64 },
+        "questionText": { "type": "string", "maxLength": 500 },
+        "selectedAnswer": { "type": "string", "maxLength": 500 },
+        "isCorrect": { "type": "boolean" },
+        "scoreAwarded": { "type": "number" },
+        "attemptNumber": { "type": "number" },
+        "timestamp": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "studentId", "studentName", "levelId", "questionId", "isCorrect"]
+    },
+    "CheatViolationLog": {
+      "title": "CheatViolationLog",
+      "description": "Log of anti-cheating violations detected during mission quizzes (e.g. tab switch, screenshot, copy attempt)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "studentId": { "type": "string", "maxLength": 64 },
+        "studentName": { "type": "string", "maxLength": 100 },
+        "classCode": { "type": "string", "maxLength": 32 },
+        "levelId": { "type": "string", "maxLength": 64 },
+        "violationType": { "type": "string", "maxLength": 50 },
+        "details": { "type": "string", "maxLength": 255 },
+        "timestamp": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "studentId", "studentName", "violationType", "timestamp"]
+    },
+    "TeacherEncouragement": {
+      "title": "TeacherEncouragement",
+      "description": "Real-time motivational and cheering messages sent by teachers to students currently online",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64 },
+        "senderName": { "type": "string", "maxLength": 100 },
+        "targetStudentId": { "type": "string", "maxLength": 64 },
+        "targetStudentName": { "type": "string", "maxLength": 100 },
+        "text": { "type": "string", "maxLength": 300 },
+        "icon": { "type": "string", "maxLength": 32 },
+        "createdAt": { "type": "string", "maxLength": 50 },
+        "read": { "type": "boolean" }
+      },
+      "required": ["id", "senderName", "targetStudentId", "text", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "Authorized teacher admin accounts with access to class management"
+    },
+    "/settings/levelUnlocks": {
+      "schema": "LevelUnlockSettings",
+      "description": "Mission unlock configuration managed by the teacher"
+    },
+    "/settings/security": {
+      "schema": "SecuritySettings",
+      "description": "Teacher dashboard PIN and authorized Google emails"
+    },
+    "/students/{studentId}": {
+      "schema": "StudentProfile",
+      "description": "Student roster profiles for Grade 2"
+    },
+    "/progress/{progressId}": {
+      "schema": "LevelProgress",
+      "description": "Student level progress records"
+    },
+    "/attemptLogs/{logId}": {
+      "schema": "StudentAttemptLog",
+      "description": "Question attempt logs for teacher assessment & diagnostics"
+    },
+    "/cheatLogs/{logId}": {
+      "schema": "CheatViolationLog",
+      "description": "Anti-cheat violation logs for teacher exam integrity monitoring"
+    },
+    "/encouragements/{messageId}": {
+      "schema": "TeacherEncouragement",
+      "description": "Live teacher cheering and encouragement messages for online students"
+    }
+  }
+}
