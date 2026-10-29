@@ -14,6 +14,7 @@ interface SchoolMapProps {
   onSelectLevel: (levelId: string) => void;
   onOpenGuideModal: () => void;
   onExitGame?: () => void;
+  onOpenLeaderboard?: () => void;
 }
 
 interface MapLocationDef {
@@ -105,6 +106,7 @@ export const SchoolMap: React.FC<SchoolMapProps> = ({
   onSelectLevel,
   onOpenGuideModal,
   onExitGame,
+  onOpenLeaderboard,
 }) => {
   const [selectedLocation, setSelectedLocation] = useState<MapLocationDef | null>(MAP_LOCATIONS[0]);
 
@@ -170,6 +172,19 @@ export const SchoolMap: React.FC<SchoolMapProps> = ({
               <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
               <span>{totalXP} XP</span>
             </div>
+
+            {/* Tombol Papan Peringkat Siswa */}
+            {onOpenLeaderboard && (
+              <button
+                type="button"
+                onClick={onOpenLeaderboard}
+                className="flex items-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 text-amber-950 font-black text-xs sm:text-sm border border-amber-500 shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                title="Buka Papan Peringkat Siswa"
+              >
+                <Trophy className="w-3.5 h-3.5 fill-amber-950 text-amber-950" />
+                <span>Peringkat</span>
+              </button>
+            )}
 
             <button
               type="button"

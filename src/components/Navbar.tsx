@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Volume2, VolumeX, Music, Shield, Compass, Sparkles, LogOut } from 'lucide-react';
+import { Volume2, VolumeX, Music, Shield, Compass, Sparkles, LogOut, Trophy } from 'lucide-react';
 import { soundManager } from '../utils/audio';
 import { antiCheatService } from '../services/antiCheat';
 import { StudentProfile } from '../types/game';
@@ -10,6 +10,7 @@ interface NavbarProps {
   onNavigateMap: () => void;
   onNavigateTeacher: () => void;
   onExitGame?: () => void;
+  onOpenLeaderboard?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -18,20 +19,15 @@ export const Navbar: React.FC<NavbarProps> = ({
   onNavigateMap,
   onNavigateTeacher,
   onExitGame,
+  onOpenLeaderboard,
 }) => {
   const [isMuted, setIsMuted] = useState(soundManager.isMuted);
   const [isMusicActive, setIsMusicActive] = useState(soundManager.isMusicActive);
   const [isTtsActive, setIsTtsActive] = useState(soundManager.isTtsActive);
-  const [isBoosted, setIsBoosted] = useState(soundManager.isBoosted);
 
   const handleToggleSound = () => {
     const newState = soundManager.toggleMute();
     setIsMuted(newState);
-  };
-
-  const handleToggleBoost = () => {
-    const newState = soundManager.toggleAudioBoost();
-    setIsBoosted(newState);
   };
 
   const handleToggleMusic = () => {
@@ -86,22 +82,18 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Audio and Navigation controls row */}
         <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-1 sm:gap-2 overflow-x-auto py-0.5 no-scrollbar">
-          {/* Audio Booster button (Mode Suara Kuat Super Nyaring) */}
-          <button
-            type="button"
-            onClick={handleToggleBoost}
-            className={`px-2.5 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 flex-shrink-0 shadow-xs border ${
-              isBoosted
-                ? 'bg-gradient-to-r from-amber-400 to-yellow-400 text-amber-950 border-amber-500 shadow-amber-200/80 ring-2 ring-amber-300'
-                : 'bg-gray-100 hover:bg-gray-200 text-gray-600 border-gray-300'
-            }`}
-            title={isBoosted ? 'Mode Audio Kuat Aktif (2.8x Nyaring & Jernih)' : 'Klik untuk Aktifkan Mode Audio Kuat'}
-          >
-            <span className="text-xs">🔊</span>
-            <span className="text-[11px]">
-              {isBoosted ? 'Audio Kuat (ON)' : 'Audio Normal'}
-            </span>
-          </button>
+          {/* Tombol Papan Peringkat Siswa */}
+          {onOpenLeaderboard && (
+            <button
+              type="button"
+              onClick={onOpenLeaderboard}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 text-amber-950 font-black text-xs shadow-xs border border-amber-500 hover:brightness-105 active:scale-95 transition-all flex-shrink-0 cursor-pointer"
+              title="Lihat Papan Peringkat Sahabat Juara"
+            >
+              <Trophy className="w-3.5 h-3.5 text-amber-950" />
+              <span>Peringkat</span>
+            </button>
+          )}
 
           {/* TTS voice narration toggle */}
           <button

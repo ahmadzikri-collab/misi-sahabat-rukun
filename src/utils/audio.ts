@@ -10,7 +10,6 @@ let bgMusicInterval: ReturnType<typeof setInterval> | null = null;
 let isMusicPlaying = false;
 let isSoundMuted = false;
 let isTtsEnabled = true;
-let isAudioBoosted = false; // Mode Audio Normal default jernih tanpa distorsi
 let currentSpeechKey: string | null = null;
 const speechListeners: Set<(key: string | null) => void> = new Set();
 
@@ -67,7 +66,7 @@ function getAudioContext(): AudioContext {
       (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     audioCtx = new AudioContextClass();
 
-    // Limiter lembut jernih untuk mencegah clipping tanpa membuat suara keruh
+    // Limiter jernih untuk mencegah clipping tanpa membuat suara terdistorsi
     compressorNode = audioCtx.createDynamicsCompressor();
     compressorNode.threshold.setValueAtTime(-6, audioCtx.currentTime);
     compressorNode.knee.setValueAtTime(6, audioCtx.currentTime);
@@ -76,7 +75,7 @@ function getAudioContext(): AudioContext {
     compressorNode.release.setValueAtTime(0.1, audioCtx.currentTime);
 
     masterGainNode = audioCtx.createGain();
-    masterGainNode.gain.setValueAtTime(isAudioBoosted ? 1.25 : 0.85, audioCtx.currentTime);
+    masterGainNode.gain.setValueAtTime(1.0, audioCtx.currentTime);
 
     masterGainNode.connect(compressorNode);
     compressorNode.connect(audioCtx.destination);
@@ -91,7 +90,7 @@ function getMasterOutput(): GainNode {
   getAudioContext();
   if (!masterGainNode && audioCtx) {
     masterGainNode = audioCtx.createGain();
-    masterGainNode.gain.setValueAtTime(isAudioBoosted ? 1.25 : 0.85, audioCtx.currentTime);
+    masterGainNode.gain.setValueAtTime(1.0, audioCtx.currentTime);
     if (compressorNode) {
       masterGainNode.connect(compressorNode);
     } else {
@@ -191,7 +190,7 @@ export const soundManager = {
     return isMusicPlaying;
   },
   get isBoosted() {
-    return isAudioBoosted;
+    return false;
   },
   get activeSpeechKey() {
     return currentSpeechKey;
@@ -225,29 +224,25 @@ export const soundManager = {
   },
 
   /**
-   * Beralih antara Audio Normal (1.0x) dan Audio Kuat Super Nyaring (2.8x)
+   * Efek Suara Transisi Halus (Portal Melodi Ceria Uciel)
+   * Dimainkan saat siswa berpindah antar level atau kembali ke peta
    */
-  toggleAudioBoost(): boolean {
-    isAudioBoosted = !isAudioBoosted;
-    const ctx = getAudioContext();
-    const master = getMasterOutput();
-    master.gain.setValueAtTime(isAudioBoosted ? 2.8 : 1.0, ctx.currentTime);
-
-    // Mainkan nada selebrasi mantap agar pengguna langsung merasakan efek audio kuat
-    this.playCelebration();
-
-    // Maskot Uciel berbicara dengan ramah dan imut
-    if (isAudioBoosted) {
-      setTimeout(() => {
-        this.speak('Mode Audio Kuat aktif! Suara Uciel sekarang lebih nyaring dan ceria!', 'boost-notice');
-      }, 350);
-    } else {
-      setTimeout(() => {
-        this.speak('Mode Audio Normal kembali aktif.', 'boost-notice');
-      }, 350);
+  playTransitionChime() {
+    if (isSoundMuted) return;
+    try {
+      const notes = [523.25, 659.25, 783.99, 1046.5]; // C5, E5, G5, C6
+      notes.forEach((freq, i) => {
+        setTimeout(() => {
+          playHarmonicTone(freq, 0.22, 'sine', 0.15);
+        }, i * 65);
+      });
+    } catch {
+      // Ignore
     }
+  },
 
-    return isAudioBoosted;
+  toggleAudioBoost(): boolean {
+    return false;
   },
 
   /**
@@ -455,10 +450,10 @@ export const soundManager = {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'id-ID';
 
-      // Suara natural, hangat, jernih & artikulatif untuk siswa kelas 2 SD
+      // Suara ramah, imut khas anak-anak kelas 2 SD & maskot cilik Uciel
       utterance.volume = 1.0;
-      utterance.pitch = 1.18; // Pitch hangat & ceria, bebas dari distorsi robotik
-      utterance.rate = 0.98;  // Tempo stabil, jelas & mudah dipahami anak-anak
+      utterance.pitch = 1.45; // Nada imut & ceria seperti suara anak-anak
+      utterance.rate = 1.02;  // Tempo energik, ceria, artikulasi jelas dan ramah anak
 
       // Ambil suara terbaru dari browser
       let voices = window.speechSynthesis.getVoices();

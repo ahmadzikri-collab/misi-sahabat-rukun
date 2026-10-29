@@ -4,7 +4,13 @@
  * Designed with transparent status flags so teachers know whether online sync is active.
  */
 
-import { StudentProfile, LevelProgress, StudentAttemptLog, TeacherEncouragement } from '../types/game';
+import {
+  StudentProfile,
+  LevelProgress,
+  StudentAttemptLog,
+  TeacherEncouragement,
+  StudentLeaderboardEntry,
+} from '../types/game';
 import { cloudDb } from './firebase';
 
 const STORAGE_KEYS = {
@@ -735,5 +741,77 @@ export const gameDb = {
       window.removeEventListener('storage', handleStorage);
       unsubCloud?.();
     };
+  },
+
+  // ==========================================
+  // PAPAN PERINGKAT SISWA (STUDENT LEADERBOARD)
+  // ==========================================
+  getLeaderboard(classCodeFilter?: string): StudentLeaderboardEntry[] {
+    const students = this.getAllStudents();
+    const list: StudentLeaderboardEntry[] = [];
+
+    students.forEach((student) => {
+      if (classCodeFilter && student.classCode !== classCodeFilter) {
+        return;
+      }
+      const progressMap = this.getLevelProgress(student.id);
+      const progressValues = Object.values(progressMap);
+
+      let totalScore = 0;
+      let totalStars = 0;
+      let totalXP = 0;
+      let completedMissions = 0;
+
+      progressValues.forEach((p) => {
+        totalScore += p.score || 0;
+        totalStars += p.starsEarned || 0;
+        totalXP += p.xpEarned || 0;
+        if (p.status === 'completed' || (p.starsEarned && p.starsEarned > 0)) {
+          completedMissions += 1;
+        }
+      });
+
+      list.push({
+        rank: 0,
+        studentId: student.id,
+        studentCode: student.studentCode,
+        displayName: student.displayName,
+        nickname: student.nickname,
+        classCode: student.classCode,
+        avatarStyle: student.avatarStyle,
+        isOnline: Boolean(student.isOnline),
+        totalScore,
+        totalStars,
+        totalXP,
+        completedMissions,
+        badgeTitle: '',
+        lastActive: student.lastActive,
+      });
+    });
+
+    // Urutkan berdasarkan totalScore tertinggi, kemudian totalStars, lalu totalXP
+    list.sort((a, b) => {
+      if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
+      if (b.totalStars !== a.totalStars) return b.totalStars - a.totalStars;
+      if (b.totalXP !== a.totalXP) return b.totalXP - a.totalXP;
+      return a.displayName.localeCompare(b.displayName);
+    });
+
+    // Berikan peringkat dan gelar badge
+    return list.map((entry, index) => {
+      const rank = index + 1;
+      let badgeTitle = 'Bintang Rukun';
+      if (rank === 1) badgeTitle = '🥇 Juara 1 Garuda Emas';
+      else if (rank === 2) badgeTitle = '🥈 Juara 2 Garuda Perak';
+      else if (rank === 3) badgeTitle = '🥉 Juara 3 Garuda Perunggu';
+      else if (entry.completedMissions >= 3) badgeTitle = '⭐ Sahabat Teladan';
+      else if (entry.completedMissions >= 1) badgeTitle = '🌱 Petualang Cilik';
+
+      return {
+        ...entry,
+        rank,
+        badgeTitle,
+      };
+    });
   },
 };

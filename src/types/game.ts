@@ -119,3 +119,21 @@ export interface TeacherEncouragement {
   createdAt: string;
   read?: boolean;
 }
+
+export interface StudentLeaderboardEntry {
+  rank: number;
+  studentId: string;
+  studentCode: string;
+  displayName: string;
+  nickname: string;
+  classCode: string;
+  avatarStyle: string;
+  isOnline: boolean;
+  totalScore: number;
+  totalStars: number;
+  totalXP: number;
+  completedMissions: number;
+  badgeTitle: string;
+  lastActive: string;
+}
+

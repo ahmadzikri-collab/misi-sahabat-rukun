@@ -24,6 +24,9 @@ import { User } from 'firebase/auth';
 import { StudentProfile, LevelProgress } from './types/game';
 import { soundManager } from './utils/audio';
 import { TeacherEncouragementToast } from './components/TeacherEncouragementToast';
+import { motion, AnimatePresence } from 'motion/react';
+import { LevelTransitionOverlay } from './components/transitions/LevelTransitionOverlay';
+import { StudentLeaderboardModal } from './components/StudentLeaderboardModal';
 
 type AppView =
   | 'welcome'
@@ -41,9 +44,45 @@ export default function App() {
   const [levelProgress, setLevelProgress] = useState<Record<string, LevelProgress>>({});
   const [levelUnlocks, setLevelUnlocks] = useState<Record<string, boolean>>(gameDb.getLevelUnlockSettings());
   const [isGuideModalOpen, setIsGuideModalOpen] = useState(false);
+  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [teacherUser, setTeacherUser] = useState<User | null>(auth.currentUser);
   const [isTeacherLoginModalOpen, setIsTeacherLoginModalOpen] = useState(false);
   const [globalCheatAlert, setGlobalCheatAlert] = useState<AntiCheatAlertEvent | null>(null);
+
+  // Portal Animasi Transisi Halus antar Level dan Peta
+  const [transitionPortal, setTransitionPortal] = useState<{
+    isOpen: boolean;
+    targetView: AppView;
+    title: string;
+    subtitle: string;
+    icon: string;
+  }>({
+    isOpen: false,
+    targetView: 'welcome',
+    title: '',
+    subtitle: '',
+    icon: '✨',
+  });
+
+  const triggerViewTransition = (
+    targetView: AppView,
+    title: string,
+    subtitle = 'Petualangan Hidup Rukun di Sekolah',
+    icon = '✨'
+  ) => {
+    setTransitionPortal({
+      isOpen: true,
+      targetView,
+      title,
+      subtitle,
+      icon,
+    });
+  };
+
+  const handleTransitionComplete = () => {
+    setCurrentView(transitionPortal.targetView);
+    setTransitionPortal((prev) => ({ ...prev, isOpen: false }));
+  };
 
   // Pengawasan Anti-Kecurangan: HANYA Aktif Saat Siswa Mengerjakan Misi Kuis / Ujian (level_*)
   // Halaman Muka (welcome), Peta (map), dan Dashboard Guru bebas dari pengawas ujian
@@ -197,7 +236,12 @@ export default function App() {
     const progress = gameDb.getLevelProgress(student.id);
     setLevelProgress(progress);
     gameDb.updateStudentPresence(student.id, true, '🗺️ Di Peta Sekolah SD INDONESIA EMAS');
-    setCurrentView('map');
+    triggerViewTransition(
+      'map',
+      `Selamat Datang, ${student.nickname}!`,
+      'Membuka Peta Petualangan Hidup Rukun di Sekolah...',
+      '🏫'
+    );
   };
 
   const handleExitGame = () => {
@@ -238,41 +282,55 @@ export default function App() {
       return;
     }
 
-    if (currentStudent) {
-      const missionNames: Record<string, string> = {
-        'taman-pancasila': '⭐ Misi 1: Taman Pancasila (PPKn)',
-        'perpustakaan-ceria': '⭐ Misi 2: Perpustakaan Ceria (B. Indonesia)',
-        'kantin-pintar': '⭐ Misi 3: Kantin Pintar (Matematika)',
-        'studio-kreatif': '⭐ Misi 4: Studio Kreatif (SBdP)',
-        'lapangan-persahabatan': '⭐ Misi 5: Lapangan Persahabatan (PJOK)',
-      };
-      gameDb.updateStudentPresence(
-        currentStudent.id,
-        true,
-        missionNames[levelId] || `⭐ Misi: ${levelId}`
-      );
-    }
+    const missionMeta: Record<string, { view: AppView; title: string; subtitle: string; icon: string }> = {
+      'taman-pancasila': {
+        view: 'level_taman_pancasila',
+        title: 'Misi 1: Taman Pancasila (PPKn)',
+        subtitle: 'Mengenal simbol sila Pancasila dan hidup rukun bersama teman',
+        icon: '⭐',
+      },
+      'perpustakaan-ceria': {
+        view: 'level_perpustakaan_ceria',
+        title: 'Misi 2: Perpustakaan Ceria (B. Indonesia)',
+        subtitle: 'Belajar kalimat santun, ajakan, dan saling menghargai',
+        icon: '📖',
+      },
+      'kantin-pintar': {
+        view: 'level_kantin_pintar',
+        title: 'Misi 3: Kantin Pintar (Matematika)',
+        subtitle: 'Penjumlahan, pengurangan sehat & tertib antre',
+        icon: '🍎',
+      },
+      'studio-kreatif': {
+        view: 'level_studio_kreatif',
+        title: 'Misi 4: Studio Kreatif (SBdP)',
+        subtitle: 'Karya seni imajinatif indahnya keberagaman sekolah',
+        icon: '🎨',
+      },
+      'lapangan-persahabatan': {
+        view: 'level_lapangan_persahabatan',
+        title: 'Misi 5: Lapangan Persahabatan (PJOK)',
+        subtitle: 'Gerak lokomotor lincah & sportivitas dalam permainan',
+        icon: '⚽',
+      },
+    };
 
-    switch (levelId) {
-      case 'taman-pancasila':
-        setCurrentView('level_taman_pancasila');
-        break;
-      case 'perpustakaan-ceria':
-        setCurrentView('level_perpustakaan_ceria');
-        break;
-      case 'kantin-pintar':
-        setCurrentView('level_kantin_pintar');
-        break;
-      case 'studio-kreatif':
-        setCurrentView('level_studio_kreatif');
-        break;
-      case 'lapangan-persahabatan':
-        setCurrentView('level_lapangan_persahabatan');
-        break;
-      default:
-        setCurrentView('map');
-        break;
+    const target = missionMeta[levelId];
+    if (target) {
+      if (currentStudent) {
+        gameDb.updateStudentPresence(currentStudent.id, true, target.title);
+      }
+      triggerViewTransition(target.view, target.title, target.subtitle, target.icon);
     }
+  };
+
+  const handleBackToMap = () => {
+    triggerViewTransition(
+      'map',
+      'Peta Sekolah SD INDONESIA EMAS',
+      'Kembali menjelajahi petualangan hidup rukun bersama Uciel!',
+      '🗺️'
+    );
   };
 
   const handleCompleteLevel = (levelId: string, result: { stars: number; score: number; xp: number }) => {
@@ -319,101 +377,130 @@ export default function App() {
         <Navbar
           currentStudent={currentStudent}
           currentView={currentView === 'map' ? 'map' : 'level'}
-          onNavigateMap={() => setCurrentView('map')}
+          onNavigateMap={handleBackToMap}
           onNavigateTeacher={handleRequestTeacherAccess}
           onExitGame={handleExitGame}
+          onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
         />
       )}
 
-      {/* Screen Views */}
-      <main className="flex-1 flex flex-col">
-        {currentView === 'welcome' && (
-          <StudentLogin
-            onStudentLogin={handleStudentLogin}
-            onTeacherLogin={handleRequestTeacherAccess}
-            onOpenGuideModal={() => setIsGuideModalOpen(true)}
-          />
-        )}
+      {/* Screen Views dengan Animasi Transisi Halus */}
+      <main className="flex-1 flex flex-col overflow-hidden">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentView}
+            initial={{ opacity: 0, scale: 0.985 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.985 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+            className="flex-1 flex flex-col"
+          >
+            {currentView === 'welcome' && (
+              <StudentLogin
+                onStudentLogin={handleStudentLogin}
+                onTeacherLogin={handleRequestTeacherAccess}
+                onOpenGuideModal={() => setIsGuideModalOpen(true)}
+              />
+            )}
 
-        {currentView === 'map' && currentStudent && (
-          <SchoolMap
-            currentStudent={currentStudent}
-            levelProgress={levelProgress}
-            levelUnlocks={levelUnlocks}
-            onSelectLevel={handleSelectLevel}
-            onOpenGuideModal={() => setIsGuideModalOpen(true)}
-            onExitGame={handleExitGame}
-          />
-        )}
+            {currentView === 'map' && currentStudent && (
+              <SchoolMap
+                currentStudent={currentStudent}
+                levelProgress={levelProgress}
+                levelUnlocks={levelUnlocks}
+                onSelectLevel={handleSelectLevel}
+                onOpenGuideModal={() => setIsGuideModalOpen(true)}
+                onExitGame={handleExitGame}
+                onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
+              />
+            )}
 
-        {/* Level 1: Taman Pancasila (PPKn) */}
-        {currentView === 'level_taman_pancasila' && (
-          <TamanPancasilaLevel
-            student={currentStudent}
-            studentName={currentStudent?.nickname || 'Sahabat Juara'}
-            onCompleteLevel={(res) => handleCompleteLevel('taman-pancasila', res)}
-            onBackToMap={() => setCurrentView('map')}
-          />
-        )}
+            {/* Level 1: Taman Pancasila (PPKn) */}
+            {currentView === 'level_taman_pancasila' && (
+              <TamanPancasilaLevel
+                student={currentStudent}
+                studentName={currentStudent?.nickname || 'Sahabat Juara'}
+                onCompleteLevel={(res) => handleCompleteLevel('taman-pancasila', res)}
+                onBackToMap={handleBackToMap}
+              />
+            )}
 
-        {/* Level 2: Perpustakaan Ceria (B. Indonesia) */}
-        {currentView === 'level_perpustakaan_ceria' && (
-          <PerpustakaanCeriaLevel
-            student={currentStudent}
-            studentName={currentStudent?.nickname || 'Sahabat Juara'}
-            onCompleteLevel={(res) => handleCompleteLevel('perpustakaan-ceria', res)}
-            onBackToMap={() => setCurrentView('map')}
-          />
-        )}
+            {/* Level 2: Perpustakaan Ceria (B. Indonesia) */}
+            {currentView === 'level_perpustakaan_ceria' && (
+              <PerpustakaanCeriaLevel
+                student={currentStudent}
+                studentName={currentStudent?.nickname || 'Sahabat Juara'}
+                onCompleteLevel={(res) => handleCompleteLevel('perpustakaan-ceria', res)}
+                onBackToMap={handleBackToMap}
+              />
+            )}
 
-        {/* Level 3: Kantin Pintar (Matematika) */}
-        {currentView === 'level_kantin_pintar' && (
-          <KantinPintarLevel
-            student={currentStudent}
-            studentName={currentStudent?.nickname || 'Sahabat Juara'}
-            onCompleteLevel={(res) => handleCompleteLevel('kantin-pintar', res)}
-            onBackToMap={() => setCurrentView('map')}
-          />
-        )}
+            {/* Level 3: Kantin Pintar (Matematika) */}
+            {currentView === 'level_kantin_pintar' && (
+              <KantinPintarLevel
+                student={currentStudent}
+                studentName={currentStudent?.nickname || 'Sahabat Juara'}
+                onCompleteLevel={(res) => handleCompleteLevel('kantin-pintar', res)}
+                onBackToMap={handleBackToMap}
+              />
+            )}
 
-        {/* Level 4: Studio Kreatif (SBdP) */}
-        {currentView === 'level_studio_kreatif' && (
-          <StudioKreatifLevel
-            student={currentStudent}
-            studentName={currentStudent?.nickname || 'Sahabat Juara'}
-            onCompleteLevel={(res) => handleCompleteLevel('studio-kreatif', res)}
-            onBackToMap={() => setCurrentView('map')}
-          />
-        )}
+            {/* Level 4: Studio Kreatif (SBdP) */}
+            {currentView === 'level_studio_kreatif' && (
+              <StudioKreatifLevel
+                student={currentStudent}
+                studentName={currentStudent?.nickname || 'Sahabat Juara'}
+                onCompleteLevel={(res) => handleCompleteLevel('studio-kreatif', res)}
+                onBackToMap={handleBackToMap}
+              />
+            )}
 
-        {/* Level 5: Lapangan Persahabatan (PJOK) */}
-        {currentView === 'level_lapangan_persahabatan' && (
-          <LapanganPersahabatanLevel
-            student={currentStudent}
-            studentName={currentStudent?.nickname || 'Sahabat Juara'}
-            onCompleteLevel={(res) => handleCompleteLevel('lapangan-persahabatan', res)}
-            onBackToMap={() => setCurrentView('map')}
-          />
-        )}
+            {/* Level 5: Lapangan Persahabatan (PJOK) */}
+            {currentView === 'level_lapangan_persahabatan' && (
+              <LapanganPersahabatanLevel
+                student={currentStudent}
+                studentName={currentStudent?.nickname || 'Sahabat Juara'}
+                onCompleteLevel={(res) => handleCompleteLevel('lapangan-persahabatan', res)}
+                onBackToMap={handleBackToMap}
+              />
+            )}
 
-        {/* Teacher Dashboard */}
-        {currentView === 'teacher' && (
-          <TeacherDashboard
-            levelUnlocks={levelUnlocks}
-            onUpdateLevelUnlocks={handleUpdateLevelUnlocks}
-            onBackToGame={() => setCurrentView('map')}
-            onOpenGuideModal={() => setIsGuideModalOpen(true)}
-            teacherEmail={teacherUser?.email}
-            teacherName={teacherUser?.displayName}
-            teacherPhoto={teacherUser?.photoURL}
-            onLogout={async () => {
-              await signOutTeacher();
-              setTeacherUser(null);
-              setCurrentView('welcome');
-            }}
-          />
-        )}
+            {/* Teacher Dashboard */}
+            {currentView === 'teacher' && (
+              <TeacherDashboard
+                levelUnlocks={levelUnlocks}
+                onUpdateLevelUnlocks={handleUpdateLevelUnlocks}
+                onBackToGame={() => setCurrentView('map')}
+                onOpenGuideModal={() => setIsGuideModalOpen(true)}
+                teacherEmail={teacherUser?.email}
+                teacherName={teacherUser?.displayName}
+                teacherPhoto={teacherUser?.photoURL}
+                onLogout={async () => {
+                  await signOutTeacher();
+                  setTeacherUser(null);
+                  setCurrentView('welcome');
+                }}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
       </main>
+
+      {/* Papan Peringkat Siswa SD INDONESIA EMAS */}
+      <StudentLeaderboardModal
+        isOpen={isLeaderboardOpen}
+        onClose={() => setIsLeaderboardOpen(false)}
+        currentStudent={currentStudent}
+      />
+
+      {/* Portal Animasi Transisi Halus antar Level & Peta */}
+      <LevelTransitionOverlay
+        isVisible={transitionPortal.isOpen}
+        destinationTitle={transitionPortal.title}
+        destinationSubtitle={transitionPortal.subtitle}
+        destinationIcon={transitionPortal.icon}
+        onAnimationComplete={handleTransitionComplete}
+      />
 
       {/* Modal Login Khusus Akun Google Guru (Firebase Authentication) */}
       <TeacherGoogleLoginModal

@@ -133,7 +133,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   teacherPhoto,
   onLogout,
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'levels' | 'students' | 'attempts' | 'anticheat' | 'messages' | 'security' | 'guides'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'levels' | 'students' | 'leaderboard' | 'attempts' | 'anticheat' | 'messages' | 'security' | 'guides'>('overview');
   const [students, setStudents] = useState<StudentProfile[]>(gameDb.getAllStudents());
   const [attemptLogs, setAttemptLogs] = useState<StudentAttemptLog[]>(gameDb.getAttemptLogs());
   const [cheatLogs, setCheatLogs] = useState<CheatViolationLog[]>(() => antiCheatService.getAllViolationLogs());
@@ -736,6 +736,19 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
             }`}
           >
             👥 Data Siswa ({students.length})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('leaderboard')}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+              activeTab === 'leaderboard'
+                ? 'bg-amber-500 text-slate-950 font-black shadow-md'
+                : 'text-slate-400 hover:text-white hover:bg-slate-700'
+            }`}
+          >
+            <Trophy className="w-4 h-4 text-amber-300" />
+            <span>🏆 Papan Peringkat</span>
           </button>
 
           <button
@@ -1472,6 +1485,116 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                         );
                       })
                     )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB: LEADERBOARD / PAPAN PERINGKAT SISWA */}
+        {activeTab === 'leaderboard' && (
+          <div className="space-y-4">
+            <div className="p-4 sm:p-5 rounded-2xl bg-slate-800 border border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
+                  <Trophy className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-black text-white">Papan Peringkat Siswa SD INDONESIA EMAS</h3>
+                  <p className="text-xs text-slate-400">
+                    Akumulasi poin, bintang misi, dan capaian hidup rukun seluruh siswa kelas 2.
+                  </p>
+                </div>
+              </div>
+              <div className="text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-amber-300">
+                Total {students.length} Siswa Terdaftar
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-slate-800 border border-slate-700 overflow-hidden shadow-lg">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-300">
+                  <thead className="bg-slate-900/80 text-[11px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-700">
+                    <tr>
+                      <th className="py-3 px-4 text-center">Peringkat</th>
+                      <th className="py-3 px-4">Nama Siswa</th>
+                      <th className="py-3 px-3">Kelas</th>
+                      <th className="py-3 px-4">Gelar Penghargaan</th>
+                      <th className="py-3 px-4 text-center">Misi Selesai</th>
+                      <th className="py-3 px-4 text-center">Total Bintang</th>
+                      <th className="py-3 px-4 text-center">Total XP</th>
+                      <th className="py-3 px-4 text-right">Total Skor</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-700/60 font-medium">
+                    {gameDb.getLeaderboard().map((entry) => {
+                      const isTop1 = entry.rank === 1;
+                      const isTop2 = entry.rank === 2;
+                      const isTop3 = entry.rank === 3;
+
+                      return (
+                        <tr
+                          key={entry.studentId}
+                          className={`hover:bg-slate-700/40 transition-colors ${
+                            isTop1
+                              ? 'bg-amber-500/10'
+                              : isTop2
+                              ? 'bg-slate-300/5'
+                              : isTop3
+                              ? 'bg-amber-800/10'
+                              : ''
+                          }`}
+                        >
+                          <td className="py-3 px-4 text-center">
+                            {isTop1 ? (
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-amber-400 text-slate-950 font-black text-xs shadow-xs">
+                                🥇 1
+                              </span>
+                            ) : isTop2 ? (
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-300 text-slate-950 font-black text-xs shadow-xs">
+                                🥈 2
+                              </span>
+                            ) : isTop3 ? (
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-amber-700 text-white font-black text-xs shadow-xs">
+                                🥉 3
+                              </span>
+                            ) : (
+                              <span className="font-bold text-slate-400">#{entry.rank}</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2">
+                              <span className="font-black text-white text-sm">{entry.displayName}</span>
+                              {entry.isOnline && (
+                                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" title="Online" />
+                              )}
+                            </div>
+                            <span className="text-[10px] text-slate-400">ID: {entry.studentCode}</span>
+                          </td>
+                          <td className="py-3 px-3">
+                            <span className="px-2 py-0.5 rounded-md bg-slate-900 border border-slate-700 text-slate-300 text-[11px] font-bold">
+                              {entry.classCode}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="text-amber-300 font-bold">{entry.badgeTitle}</span>
+                          </td>
+                          <td className="py-3 px-4 text-center font-bold text-slate-200">
+                            {entry.completedMissions} / 5 Misi
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <span className="font-black text-amber-400">⭐ {entry.totalStars} / 15</span>
+                          </td>
+                          <td className="py-3 px-4 text-center font-bold text-emerald-400">
+                            {entry.totalXP} XP
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <span className="text-sm font-black text-rose-400">{entry.totalScore} Poin</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
