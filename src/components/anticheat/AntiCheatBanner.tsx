@@ -35,16 +35,6 @@ export const AntiCheatBanner: React.FC<AntiCheatBannerProps> = ({ violationCount
       </div>
 
       <div className="flex items-center gap-2">
-        {violationCount > 0 ? (
-          <span className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-500/20 text-amber-300 font-extrabold text-[11px] border border-amber-500/30">
-            <AlertCircle className="w-3 h-3 text-amber-400" />
-            <span>{violationCount} Peringatan</span>
-          </span>
-        ) : (
-          <span className="text-[11px] text-emerald-400 font-extrabold">
-            ⭐ Status Bersih
-          </span>
-        )}
 
 
         <button

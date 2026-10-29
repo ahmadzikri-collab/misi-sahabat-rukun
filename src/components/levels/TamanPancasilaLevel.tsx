@@ -1009,8 +1009,6 @@ export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
         </div>
       )}
 
-      {/* Anti-Cheat Warning Modal Dialog */}
-      <AntiCheatModal alert={activeAlert} onDismiss={dismissAlert} />
     </div>
   );
 };

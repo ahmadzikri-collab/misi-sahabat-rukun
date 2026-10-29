@@ -427,8 +427,6 @@ export const KantinPintarLevel: React.FC<KantinPintarLevelProps> = ({
         )}
       </div>
 
-      {/* Anti-Cheat Warning Modal Dialog */}
-      <AntiCheatModal alert={activeAlert} onDismiss={dismissAlert} />
     </div>
   );
 };

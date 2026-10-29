@@ -423,8 +423,6 @@ export const StudioKreatifLevel: React.FC<StudioKreatifLevelProps> = ({
         )}
       </div>
 
-      {/* Anti-Cheat Warning Modal Dialog */}
-      <AntiCheatModal alert={activeAlert} onDismiss={dismissAlert} />
     </div>
   );
 };

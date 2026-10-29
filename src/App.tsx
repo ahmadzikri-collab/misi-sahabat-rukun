@@ -431,15 +431,9 @@ export default function App() {
         onClose={() => setIsGuideModalOpen(false)}
       />
 
-      {/* Global Anti-Cheat Warning Modal & Screen Privacy Blinding Shield (HANYA Aktif Saat Mengerjakan Misi Kuis / Ujian) */}
+      {/* Screen Privacy Blinding Shield saat screenshot atau jendela diminimalkan (HANYA Aktif Saat Misi Kuis) */}
       {currentView.startsWith('level_') && (
-        <>
-          <AntiCheatModal
-            alert={globalCheatAlert}
-            onDismiss={() => setGlobalCheatAlert(null)}
-          />
-          <ScreenPrivacyShield />
-        </>
+        <ScreenPrivacyShield />
       )}
 
       {/* Live Teacher Encouragement Cheering Toast for Students */}

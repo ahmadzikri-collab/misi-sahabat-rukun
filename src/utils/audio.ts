@@ -292,11 +292,17 @@ export const soundManager = {
   },
 
   /**
-   * Sound effect: Klik tombol mantap & punchy di HP dan Laptop
+   * Sound effect: Klik tombol mantap & responsif instan di HP dan Laptop
    */
   playClick() {
     if (isSoundMuted) return;
-    playHarmonicTone(580, 0.08, 'triangle', 0.45);
+    try {
+      setTimeout(() => {
+        playHarmonicTone(580, 0.08, 'triangle', 0.45);
+      }, 0);
+    } catch {
+      // ignore
+    }
   },
 
   /**
@@ -304,7 +310,13 @@ export const soundManager = {
    */
   playDialoguePop() {
     if (isSoundMuted) return;
-    playHarmonicTone(660, 0.11, 'sine', 0.50);
+    try {
+      setTimeout(() => {
+        playHarmonicTone(660, 0.11, 'sine', 0.50);
+      }, 0);
+    } catch {
+      // ignore
+    }
   },
 
   /**

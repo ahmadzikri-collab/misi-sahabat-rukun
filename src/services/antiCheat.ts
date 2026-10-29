@@ -243,7 +243,6 @@ class AntiCheatService {
     this.lastViolationTimestamp = now;
 
     this.violationCount += 1;
-    soundManager.playWarning();
 
     const violationLog: CheatViolationLog = {
       id: `cheat-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
@@ -256,7 +255,7 @@ class AntiCheatService {
       timestamp: new Date().toISOString(),
     };
 
-    // 1. Simpan ke LocalStorage
+    // 1. Simpan ke LocalStorage untuk arsip lokal
     try {
       const logs = this.getAllViolationLogs();
       logs.unshift(violationLog);
@@ -265,7 +264,7 @@ class AntiCheatService {
       // ignore
     }
 
-    // 2. Simpan ke Log Aktivitas Umum Guru
+    // 2. Simpan ke Log Aktivitas Guru (Hanya guru yang tahu)
     gameDb.logAttempt({
       studentId: violationLog.studentId,
       studentName: violationLog.studentName,
@@ -279,37 +278,14 @@ class AntiCheatService {
       attemptNumber: 1,
     });
 
-    // 3. Simpan ke Firestore
+    // 3. Simpan ke Firestore Cloud agar guru dapat memantau secara real-time di Dashboard Guru
     cloudDb.saveCheatViolation?.(violationLog).catch(() => {});
 
-    // 4. Modal Dialog Peringatan
-    let title = '⚠️ Peringatan Kejujuran Ujian';
-    let message = details;
-
-    if (type === 'screenshot_attempt') {
-      title = '📸 Tangkap Layar di HP Dicegah!';
-      message =
-        'Terdeteksi upaya tangkap layar (screenshot) pada perangkat HP/laptop. Soal misi dilindungi demi menjaga sportivitas dan kejujuran!';
-    } else if (type === 'tab_switch') {
-      title = '⚠️ Jangan Tinggalkan Layar Misi!';
-      message =
-        'Terdeteksi berpindah tab atau membuka aplikasi lain di HP/laptop. Harap tetap di layar ujian agar nilai kejujuranmu terjaga!';
-    } else if (type === 'copy_attempt') {
-      title = '📋 Salin Teks Dinonaktifkan!';
-      message =
-        'Teks soal tidak boleh disalin. Kerjakanlah dengan pemikiranmu sendiri secara jujur dan mandiri ya!';
-    } else if (type === 'exit_fullscreen') {
-      title = '🖥️ Mode Layar Penuh Terputus!';
-      message =
-        'Kamu keluar dari mode layar penuh. Harap kembali ke mode layar penuh untuk kenyamanan dan kejujuran ujian.';
+    // 4. Siarkan event khusus guru agar Teacher Dashboard langsung menampilkan data baru
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('msr_cheat_logs_updated', { detail: violationLog }));
     }
-
-    this.notifyAlert({
-      violationType: type,
-      title,
-      message,
-      count: this.violationCount,
-    });
+    // Catatan pelanggaran TIDAK ditampilkan kepada siswa (hanya guru yang tahu di Teacher Dashboard)
   }
 
   // 1. Deteksi Touch Gesture Screenshot di HP (3 jari swipe ke bawah khas Android/Xiaomi/Oppo/Vivo/Samsung)
@@ -320,7 +296,6 @@ class AntiCheatService {
     if (e.touches && e.touches.length >= 3) {
       this.setObscured(true);
       this.clearClipboardSafe();
-      this.vibrateDevice();
       this.recordViolation(
         'screenshot_attempt',
         'Terdeteksi gestur 3 jari di HP (shortcut tangkap layar bawaan ponsel)!'
@@ -335,7 +310,6 @@ class AntiCheatService {
     if (e.touches && e.touches.length >= 3) {
       this.setObscured(true);
       this.clearClipboardSafe();
-      this.vibrateDevice();
       this.recordViolation(
         'screenshot_attempt',
         'Terdeteksi usapan 3 jari di layar HP untuk mengambil tangkapan layar!'
@@ -345,7 +319,6 @@ class AntiCheatService {
       if (deltaY > 60) {
         this.setObscured(true);
         this.clearClipboardSafe();
-        this.vibrateDevice();
         this.recordViolation(
           'screenshot_attempt',
           'Terdeteksi usapan multi-jari di layar HP (shortcut screenshot)!'
@@ -387,22 +360,14 @@ class AntiCheatService {
       const duration = Date.now() - this.blurStartTime;
       this.blurStartTime = 0;
 
-      // Di HP (Android & iOS) dan Laptop (Snipping Tool/PrintScreen overlay),
-      // pengambilan screenshot menyebabkan jeda blur singkat antara 20ms hingga 5000ms
-      if (duration >= 20 && duration <= 5000) {
-        this.vibrateDevice();
-        this.recordViolation(
-          'screenshot_attempt',
-          this.isMobileDevice()
-            ? `Terdeteksi upaya tangkap layar di HP (durasi snapshot ${Math.round(duration)}ms)! Soal dilindungi secara instan.`
-            : `Terdeteksi upaya tangkap layar / Snipping Tool (kehilangan fokus ${Math.round(duration)}ms)!`
-        );
-      } else if (duration > 5000) {
-        // Durasi lebih lama: Siswa beralih tab / membuka aplikasi lain
-        this.vibrateDevice();
+      // PENTING: Saat siswa keluar tab atau meminimalkan browser, SELALU catat sebagai tab_switch!
+      // Hanya rekam jika jeda >= 400ms untuk menghindari kedipan klik mouse yang tidak disengaja
+      if (duration >= 400) {
         this.recordViolation(
           'tab_switch',
-          `Siswa berpindah tab / membuka aplikasi lain selama ${Math.round(duration / 1000)} detik.`
+          `Siswa berpindah tab / keluar dari jendela ujian selama ${
+            duration >= 1000 ? Math.round(duration / 1000) + ' detik' : Math.round(duration) + ' ms'
+          }.`
         );
       }
     }

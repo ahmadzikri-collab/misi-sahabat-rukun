@@ -294,6 +294,11 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     };
     window.addEventListener('msr_presence_updated', handlePresenceEvent);
 
+    const handleCheatLogEvent = () => {
+      setCheatLogs(antiCheatService.getAllViolationLogs());
+    };
+    window.addEventListener('msr_cheat_logs_updated', handleCheatLogEvent);
+
     // 5. Periodic tick every 5 seconds to re-evaluate active statuses & relative time displays
     const tickTimer = setInterval(() => {
       setStudents(gameDb.getAllStudents());
@@ -304,6 +309,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
       unsubStudents();
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('msr_presence_updated', handlePresenceEvent);
+      window.removeEventListener('msr_cheat_logs_updated', handleCheatLogEvent);
       clearInterval(tickTimer);
     };
   }, []);

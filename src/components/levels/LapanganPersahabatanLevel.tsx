@@ -423,8 +423,6 @@ export const LapanganPersahabatanLevel: React.FC<LapanganPersahabatanLevelProps>
         )}
       </div>
 
-      {/* Anti-Cheat Warning Modal Dialog */}
-      <AntiCheatModal alert={activeAlert} onDismiss={dismissAlert} />
     </div>
   );
 };

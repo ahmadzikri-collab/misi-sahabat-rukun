@@ -1,1 +1,21 @@
 @import "tailwindcss";
+
+/* Hilangkan delay sentuhan 300ms pada HP dan tablet, buat respon klik tombol instan */
+*, *::before, *::after {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  touch-action: manipulation;
+  -webkit-overflow-scrolling: touch;
+}
+
+button, a, input, select, textarea, [role="button"] {
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+button {
+  user-select: none;
+  -webkit-user-select: none;
+}
