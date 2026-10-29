@@ -218,7 +218,10 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     }
   };
 
-  // Cek apakah siswa sedang aktif bermain (berdasarkan flag isOnline & aktivitas/heartbeat dalam 2 menit terakhir)
+  // State pembantu untuk memperbarui label waktu aktif relatif tiap 5 detik tanpa mereset data siswa
+  const [, setTimeTick] = useState(0);
+
+  // Cek apakah siswa sedang aktif bermain (berdasarkan flag isOnline & aktivitas/heartbeat dalam 3 menit terakhir)
   const isStudentActiveNow = (s?: StudentProfile | null): boolean => {
     if (!s || typeof s !== 'object') return false;
     if (s.isOnline === false) return false;
@@ -226,8 +229,8 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     const lastActiveTime = new Date(s.lastActive).getTime();
     if (isNaN(lastActiveTime)) return false;
     const diff = Date.now() - lastActiveTime;
-    // Siswa dianggap aktif jika flag online aktif dan detak aktivitas (heartbeat) diterima dalam 2 menit (120.000 ms)
-    return Boolean(s.isOnline && diff < 120000);
+    // Jendela aktif 3 menit (180.000 ms) agar siswa stabil online selama bermain tanpa putus-putus
+    return Boolean(s.isOnline && diff < 180000);
   };
 
   // Stats calculation
@@ -270,6 +273,12 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     // 2. Subscribe to Live Student Roster & Presence from Firestore Cloud
     const unsubStudents = cloudDb.subscribeToStudents((cloudStudents) => {
       if (cloudStudents && cloudStudents.length > 0) {
+        // Sinkronkan ke local storage agar kedua sumber data selalu konsisten tanpa flickering
+        try {
+          localStorage.setItem('msr_students_list', JSON.stringify(cloudStudents));
+        } catch {
+          // ignore
+        }
         setStudents(cloudStudents);
       }
     });
@@ -299,9 +308,9 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     };
     window.addEventListener('msr_cheat_logs_updated', handleCheatLogEvent);
 
-    // 5. Periodic tick every 5 seconds to re-evaluate active statuses & relative time displays
+    // 5. Periodic tick setiap 5 detik untuk menyegarkan tampilan waktu ("Baru saja", "1 mnt lalu") tanpa menimpa data siswa
     const tickTimer = setInterval(() => {
-      setStudents(gameDb.getAllStudents());
+      setTimeTick((t) => t + 1);
     }, 5000);
 
     return () => {

@@ -48,21 +48,21 @@ export const ScreenPrivacyShield: React.FC = () => {
             🛡️ Pengawas Kejujuran SD INDONESIA EMAS
           </span>
           <h2 className="text-xl sm:text-2xl font-black text-white leading-tight">
-            Layar Ujian Dilindungi!
+            Misi Ujian Dijeda Sejenak
           </h2>
           <p className="text-xs sm:text-sm font-bold text-amber-300 mt-1">
-            Tangkapan Layar (Screenshot) & Berpindah Tab Dicegah
+            Kembali ke jendela game untuk melanjutkan kuis
           </p>
         </div>
 
         <div className="p-3.5 rounded-2xl bg-slate-800/80 border border-slate-700 text-left space-y-2 text-xs text-slate-300 leading-relaxed w-full">
           <div className="flex items-center gap-2 text-amber-400 font-extrabold">
             <EyeOff className="w-4 h-4 flex-shrink-0" />
-            <span>Soal Disamarkan Otomatis</span>
+            <span>Soal Terlindungi Otomatis</span>
           </div>
           <p>
-            Konten misi terlindungi demi menjaga kejujuran dan sportivitas bersama teman.
-            Kembalilah ke halaman kuis untuk melanjutkan pengerjaan secara mandiri!
+            Misi disamarkan saat berpindah jendela demi menjaga sportivitas bersama kawan.
+            Sentuh layar ini untuk langsung melanjutkan tantangan petualanganmu!
           </p>
         </div>
 

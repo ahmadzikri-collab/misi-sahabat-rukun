@@ -10,7 +10,7 @@ let bgMusicInterval: ReturnType<typeof setInterval> | null = null;
 let isMusicPlaying = false;
 let isSoundMuted = false;
 let isTtsEnabled = true;
-let isAudioBoosted = true; // Mode Suara Kuat aktif secara default untuk ruang kelas
+let isAudioBoosted = false; // Mode Audio Normal default jernih tanpa distorsi
 let currentSpeechKey: string | null = null;
 const speechListeners: Set<(key: string | null) => void> = new Set();
 
@@ -67,18 +67,16 @@ function getAudioContext(): AudioContext {
       (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     audioCtx = new AudioContextClass();
 
-    // Studio-grade Dynamics Compressor untuk memaksimalkan kenyaringan (loudness)
-    // tanpa distorsi pecah di speaker HP dan laptop kecil
+    // Limiter lembut jernih untuk mencegah clipping tanpa membuat suara keruh
     compressorNode = audioCtx.createDynamicsCompressor();
-    compressorNode.threshold.setValueAtTime(-12, audioCtx.currentTime);
-    compressorNode.knee.setValueAtTime(10, audioCtx.currentTime);
-    compressorNode.ratio.setValueAtTime(8, audioCtx.currentTime);
-    compressorNode.attack.setValueAtTime(0.003, audioCtx.currentTime);
-    compressorNode.release.setValueAtTime(0.15, audioCtx.currentTime);
+    compressorNode.threshold.setValueAtTime(-6, audioCtx.currentTime);
+    compressorNode.knee.setValueAtTime(6, audioCtx.currentTime);
+    compressorNode.ratio.setValueAtTime(3, audioCtx.currentTime);
+    compressorNode.attack.setValueAtTime(0.005, audioCtx.currentTime);
+    compressorNode.release.setValueAtTime(0.1, audioCtx.currentTime);
 
     masterGainNode = audioCtx.createGain();
-    // Default boost: 2.8x gain saat aktif (super nyaring & tembus di ruang kelas)
-    masterGainNode.gain.setValueAtTime(isAudioBoosted ? 2.8 : 1.0, audioCtx.currentTime);
+    masterGainNode.gain.setValueAtTime(isAudioBoosted ? 1.25 : 0.85, audioCtx.currentTime);
 
     masterGainNode.connect(compressorNode);
     compressorNode.connect(audioCtx.destination);
@@ -93,7 +91,7 @@ function getMasterOutput(): GainNode {
   getAudioContext();
   if (!masterGainNode && audioCtx) {
     masterGainNode = audioCtx.createGain();
-    masterGainNode.gain.setValueAtTime(isAudioBoosted ? 2.8 : 1.0, audioCtx.currentTime);
+    masterGainNode.gain.setValueAtTime(isAudioBoosted ? 1.25 : 0.85, audioCtx.currentTime);
     if (compressorNode) {
       masterGainNode.connect(compressorNode);
     } else {
@@ -104,14 +102,14 @@ function getMasterOutput(): GainNode {
 }
 
 /**
- * Memainkan nada dengan harmonik ganda (dual oscillator)
- * sehingga suara terdengar nyaring, tebal, dan tembus di speaker HP / laptop
+ * Memainkan nada murni jernih (Single pure oscillator)
+ * Menghilangkan nada ganda (doble) dan distorsi keruh
  */
 function playHarmonicTone(
   freq: number,
   duration: number,
   type: OscillatorType = 'triangle',
-  peakGain: number = 0.5
+  peakGain: number = 0.28
 ) {
   if (isSoundMuted) return;
   try {
@@ -119,35 +117,19 @@ function playHarmonicTone(
     const master = getMasterOutput();
     const startTime = ctx.currentTime;
 
-    // 1. Nada Fundamental
-    const osc1 = ctx.createOscillator();
-    const gain1 = ctx.createGain();
-    osc1.type = type;
-    osc1.frequency.setValueAtTime(freq, startTime);
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, startTime);
 
-    gain1.gain.setValueAtTime(0.001, startTime);
-    gain1.gain.linearRampToValueAtTime(peakGain, startTime + 0.015);
-    gain1.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+    gain.gain.setValueAtTime(0.0001, startTime);
+    gain.gain.linearRampToValueAtTime(peakGain, startTime + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
 
-    osc1.connect(gain1);
-    gain1.connect(master);
-    osc1.start(startTime);
-    osc1.stop(startTime + duration + 0.02);
-
-    // 2. Nada Harmonik Atas (1 oktaf lebih tinggi) untuk kejelasan akustik di speaker HP kecil
-    const osc2 = ctx.createOscillator();
-    const gain2 = ctx.createGain();
-    osc2.type = 'sine';
-    osc2.frequency.setValueAtTime(freq * 2, startTime);
-
-    gain2.gain.setValueAtTime(0.001, startTime);
-    gain2.gain.linearRampToValueAtTime(peakGain * 0.45, startTime + 0.01);
-    gain2.gain.exponentialRampToValueAtTime(0.001, startTime + duration * 0.7);
-
-    osc2.connect(gain2);
-    gain2.connect(master);
-    osc2.start(startTime);
-    osc2.stop(startTime + duration * 0.7 + 0.02);
+    osc.connect(gain);
+    gain.connect(master);
+    osc.start(startTime);
+    osc.stop(startTime + duration + 0.02);
   } catch {
     // Ignore audio context error
   }
@@ -470,16 +452,13 @@ export const soundManager = {
       window.speechSynthesis.cancel();
       notifySpeechListeners(assignedKey);
 
-      // Mainkan cuitan imut Uciel tepat saat memulai berbicara!
-      this.playCuteUcielChirp();
-
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'id-ID';
 
-      // PENGATURAN SUARA ANAK-ANAK YANG IMUT, CERIA & MENGGEMASKAN
-      utterance.volume = 1.0; // Volume maksimal sistem peramban
-      utterance.pitch = 1.65; // Pitch tinggi anak-anak: imut, ceria, renyah dan menggemaskan khas maskot cilik
-      utterance.rate = 1.08;  // Tempo energik, lincah, dan riang khas anak-anak kelas 2 SD
+      // Suara natural, hangat, jernih & artikulatif untuk siswa kelas 2 SD
+      utterance.volume = 1.0;
+      utterance.pitch = 1.18; // Pitch hangat & ceria, bebas dari distorsi robotik
+      utterance.rate = 0.98;  // Tempo stabil, jelas & mudah dipahami anak-anak
 
       // Ambil suara terbaru dari browser
       let voices = window.speechSynthesis.getVoices();
