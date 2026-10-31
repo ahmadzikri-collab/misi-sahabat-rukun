@@ -190,10 +190,10 @@ export const SchoolMap: React.FC<SchoolMapProps> = ({
               type="button"
               onClick={onOpenGuideModal}
               className="p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs flex items-center gap-1 transition-colors border border-slate-600 cursor-pointer"
-              title="Panduan Guru & Karakter"
+              title="Panduan Bermain Game"
             >
               <Info className="w-3.5 h-3.5 text-sky-400" />
-              <span className="hidden sm:inline">Panduan</span>
+              <span className="hidden sm:inline">Panduan Game</span>
             </button>
           </div>
         </div>

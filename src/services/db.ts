@@ -10,6 +10,7 @@ import {
   StudentAttemptLog,
   TeacherEncouragement,
   StudentLeaderboardEntry,
+  StudentReflection,
 } from '../types/game';
 import { cloudDb } from './firebase';
 
@@ -20,6 +21,7 @@ const STORAGE_KEYS = {
   ATTEMPT_LOGS: 'msr_attempt_logs',
   TEACHER_AUTH: 'msr_teacher_authenticated',
   ENCOURAGEMENTS: 'msr_teacher_encouragements',
+  REFLECTIONS: 'msr_student_reflections',
 };
 
 // Default seed students for Grade 2 demo testing
@@ -813,5 +815,70 @@ export const gameDb = {
         badgeTitle,
       };
     });
+  },
+
+  // Student Learning Reflections
+  saveStudentReflection(reflection: StudentReflection): void {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.REFLECTIONS);
+      const list: StudentReflection[] = raw ? JSON.parse(raw) : [];
+      const idx = list.findIndex(
+        (r) => r.id === reflection.id || (r.studentId === reflection.studentId && r.levelId === reflection.levelId)
+      );
+      if (idx >= 0) {
+        list[idx] = reflection;
+      } else {
+        list.unshift(reflection);
+      }
+      localStorage.setItem(STORAGE_KEYS.REFLECTIONS, JSON.stringify(list));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('msr_reflections_updated'));
+      }
+    } catch {
+      // ignore
+    }
+    cloudDb.saveStudentReflection(reflection).catch((e) => console.warn('Cloud saveStudentReflection error:', e));
+  },
+
+  getStudentReflections(): StudentReflection[] {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.REFLECTIONS);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  },
+
+  addTeacherFeedbackToReflection(reflectionId: string, feedback: string): void {
+    try {
+      const list = this.getStudentReflections();
+      const item = list.find((r) => r.id === reflectionId);
+      if (item) {
+        item.teacherFeedback = feedback;
+        item.teacherFeedbackAt = new Date().toISOString();
+        localStorage.setItem(STORAGE_KEYS.REFLECTIONS, JSON.stringify(list));
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('msr_reflections_updated'));
+        }
+      }
+    } catch {
+      // ignore
+    }
+    cloudDb
+      .updateReflectionFeedback(reflectionId, feedback)
+      .catch((e) => console.warn('Cloud updateReflectionFeedback error:', e));
+  },
+
+  deleteStudentReflection(reflectionId: string): void {
+    try {
+      const list = this.getStudentReflections().filter((r) => r.id !== reflectionId);
+      localStorage.setItem(STORAGE_KEYS.REFLECTIONS, JSON.stringify(list));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('msr_reflections_updated'));
+      }
+    } catch {
+      // ignore
+    }
+    cloudDb.deleteStudentReflection(reflectionId).catch((e) => console.warn('Cloud deleteStudentReflection error:', e));
   },
 };

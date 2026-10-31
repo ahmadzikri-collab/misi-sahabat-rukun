@@ -8,10 +8,12 @@ import { useAntiCheat } from '../../hooks/useAntiCheat';
 import { AntiCheatWatermark } from '../anticheat/AntiCheatWatermark';
 import { AntiCheatModal } from '../anticheat/AntiCheatModal';
 import { AntiCheatBanner } from '../anticheat/AntiCheatBanner';
-import { getUcielForLocation } from '../../data/characters';
+import { getUcielForLocation, STUDIO_BG } from '../../data/characters';
+import { createSafeImageErrorHandler } from '../../utils/assets';
 import { EmotionState, StudentProfile } from '../../types/game';
 import { soundManager } from '../../utils/audio';
 import { gameDb } from '../../services/db';
+import { StudentReflectionModal } from '../StudentReflectionModal';
 
 interface StudioKreatifLevelProps {
   student?: StudentProfile | null;
@@ -54,6 +56,28 @@ const ART_CHALLENGES = [
     ],
     hint: 'Bahan yang berasal langsung dari tumbuhan atau alam disebut bahan alami.',
   },
+  {
+    id: 'studio-4',
+    description: 'Siti dan Dayu menempelkan berbagai biji-bijian dan potongan kertas warna-warni pada gambar pola burung garuda hingga tertutup rapi.',
+    question: 'Karya seni rupa dua dimensi yang dibuat dengan teknik menempel bahan pada pola gambar disebut:',
+    options: [
+      { id: 'opt-1', text: 'Karya Seni Kolase (seni tempel)', isCorrect: true, feedback: 'Tepat sekali! Kolase dibuat dengan menempelkan bahan alami atau buatan pada pola gambar.' },
+      { id: 'opt-2', text: 'Pahatan Batu Keras', isCorrect: false, feedback: 'Memahat batu adalah seni patung 3D, bukan seni tempel kolase.' },
+      { id: 'opt-3', text: 'Origami lipat tanpa lem', isCorrect: false, feedback: 'Origami adalah seni melipat kertas, bukan menempel bahan pada pola.' },
+    ],
+    hint: 'Seni menempel berbagai bahan pada permukaan gambar disebut kolase.',
+  },
+  {
+    id: 'studio-5',
+    description: 'Lani dan Edo selesai mewarnai gambar imajinatif tentang kerja sama di kelas. Gambar Lani rapi dan gambar Edo berwarna cerah.',
+    question: 'Bagaimana sikap hidup rukun yang baik terhadap hasil karya seni teman sebangku?',
+    options: [
+      { id: 'opt-1', text: 'Saling memuji, menghargai keindahan karya, dan tetap rukun', isCorrect: true, feedback: 'Luar biasa! Menghargai dan memberi apresiasi pada karya teman adalah wujud nyata persahabatan rukun!' },
+      { id: 'opt-2', text: 'Mencoret dan merusak gambar teman karena iri', isCorrect: false, feedback: 'Merusak karya teman perbuatan buruk dan merusak kerukunan.' },
+      { id: 'opt-3', text: 'Mengejek dan membandingkan secara sombong', isCorrect: false, feedback: 'Sombong dan mengejek bertentangan dengan sikap sahabat rukun.' },
+    ],
+    hint: 'Sahabat yang baik saling memberi pujian dan menghargai karya satu sama lain.',
+  },
 ];
 
 export const StudioKreatifLevel: React.FC<StudioKreatifLevelProps> = ({
@@ -83,6 +107,8 @@ export const StudioKreatifLevel: React.FC<StudioKreatifLevelProps> = ({
   const [stars, setStars] = useState(3);
   const [totalScore, setTotalScore] = useState(100);
   const [earnedXP, setEarnedXP] = useState(150);
+  const [showReflectionModal, setShowReflectionModal] = useState(false);
+  const [hasFilledReflection, setHasFilledReflection] = useState(false);
 
   const uciel = getUcielForLocation('studio-kreatif');
   const currentChallenge = ART_CHALLENGES[challengeIdx];
@@ -101,7 +127,7 @@ export const StudioKreatifLevel: React.FC<StudioKreatifLevelProps> = ({
         questionText: currentChallenge.question,
         selectedAnswer: opt.text,
         isCorrect: opt.isCorrect,
-        scoreAwarded: opt.isCorrect ? 33 : 0,
+        scoreAwarded: opt.isCorrect ? 20 : 0,
         attemptNumber: 1,
       });
     }
@@ -130,7 +156,7 @@ export const StudioKreatifLevel: React.FC<StudioKreatifLevelProps> = ({
       setGuideEmotion('idle');
       setCustomText(null);
     } else {
-      const calculatedStars = correctCount >= 2 ? 3 : 2;
+      const calculatedStars = correctCount >= 4 ? 3 : correctCount >= 2 ? 2 : 1;
       const calculatedScore = Math.round((correctCount / ART_CHALLENGES.length) * 100);
       const calculatedXP = 120 + calculatedStars * 30;
 
@@ -152,12 +178,22 @@ export const StudioKreatifLevel: React.FC<StudioKreatifLevelProps> = ({
 
   return (
     <div className="relative min-h-screen bg-slate-100 flex flex-col">
-      <div className="relative h-44 sm:h-56 w-full overflow-hidden bg-gradient-to-r from-purple-700 via-fuchsia-600 to-pink-600 shadow-md">
+      {/* Header Banner with High Quality Visual Illustration */}
+      <div className="relative h-44 sm:h-64 w-full overflow-hidden shadow-md">
+        <img
+          src={STUDIO_BG}
+          alt="Studio Kreatif"
+          referrerPolicy="no-referrer"
+          onError={createSafeImageErrorHandler('taman')}
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/35 to-transparent" />
+
         <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
           <button
             type="button"
             onClick={onBackToMap}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/90 hover:bg-white text-gray-800 text-xs sm:text-sm font-black shadow-md backdrop-blur-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/90 hover:bg-white text-gray-800 text-xs sm:text-sm font-black shadow-md backdrop-blur-sm transition-transform active:scale-95"
           >
             <Compass className="w-4 h-4 text-purple-600" />
             <span>Peta Sekolah</span>
@@ -169,7 +205,7 @@ export const StudioKreatifLevel: React.FC<StudioKreatifLevelProps> = ({
           </div>
         </div>
 
-        <div className="absolute bottom-3 left-4 right-4 text-white">
+        <div className="absolute bottom-3 left-4 right-4 text-white z-10">
           <span className="px-2 py-0.5 rounded-md bg-purple-500 font-bold text-[11px] uppercase tracking-wider text-white">
             Tema 1: Hidup Rukun • Karya Imajinatif
           </span>
@@ -410,19 +446,51 @@ export const StudioKreatifLevel: React.FC<StudioKreatifLevelProps> = ({
               </div>
             </div>
 
-            <div className="pt-2">
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
                 type="button"
-                onClick={onBackToMap}
-                className="px-8 py-3 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-black text-base shadow-lg"
+                onClick={() => {
+                  soundManager.playClick();
+                  setShowReflectionModal(true);
+                }}
+                className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 text-white font-black text-sm shadow-md flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer"
               >
-                Kembali ke Peta Sekolah
+                <span>📝 Isi Refleksi Belajar untuk Guru ✨</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (!hasFilledReflection) {
+                    setShowReflectionModal(true);
+                  } else {
+                    onBackToMap();
+                  }
+                }}
+                className="w-full sm:w-auto px-8 py-3 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-black text-base shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer"
+              >
+                <span>Kembali ke Peta Sekolah</span>
               </button>
             </div>
           </motion.div>
         )}
       </div>
 
+      {/* MODAL REFLEKSI PEMBELAJARAN UNTUK DASHBOARD GURU */}
+      <StudentReflectionModal
+        isOpen={showReflectionModal}
+        student={student}
+        studentName={student?.nickname || studentName}
+        levelId="studio-kreatif"
+        levelName="Misi 4: Studio Kreatif (SBdP)"
+        onClose={() => {
+          setShowReflectionModal(false);
+          setHasFilledReflection(true);
+        }}
+        onSubmitted={() => {
+          setHasFilledReflection(true);
+        }}
+      />
     </div>
   );
 };

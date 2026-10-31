@@ -8,10 +8,12 @@ import { useAntiCheat } from '../../hooks/useAntiCheat';
 import { AntiCheatWatermark } from '../anticheat/AntiCheatWatermark';
 import { AntiCheatModal } from '../anticheat/AntiCheatModal';
 import { AntiCheatBanner } from '../anticheat/AntiCheatBanner';
-import { getUcielForLocation } from '../../data/characters';
+import { getUcielForLocation, LAPANGAN_BG } from '../../data/characters';
+import { createSafeImageErrorHandler } from '../../utils/assets';
 import { EmotionState, StudentProfile } from '../../types/game';
 import { soundManager } from '../../utils/audio';
 import { gameDb } from '../../services/db';
+import { StudentReflectionModal } from '../StudentReflectionModal';
 
 interface LapanganPersahabatanLevelProps {
   student?: StudentProfile | null;
@@ -54,6 +56,28 @@ const PJOK_CHALLENGES = [
     ],
     hint: 'Pemanasan mempersiapkan otot tubuh sebelum berolahraga.',
   },
+  {
+    id: 'pjok-4',
+    description: 'Saat pelajaran PJOK, Udin dan regunya bermain permainan tradisional Bentengan di lapangan dengan riang gembira.',
+    question: 'Sikap apa yang harus dijaga bersama agar permainan olahraga beregu berjalan seru, adil, dan rukun?',
+    options: [
+      { id: 'opt-1', text: 'Bekerja sama secara kompak dan mematuhi aturan permainan', isCorrect: true, feedback: 'Tepat sekali! Kerja sama yang kompak dan patuh pada aturan membuat permainan terasa adil, aman, dan menyenangkan!' },
+      { id: 'opt-2', text: 'Bermain curang dan mendorong teman agar menang sendiri', isCorrect: false, feedback: 'Bermain curang merugikan teman dan merusak persahabatan di sekolah.' },
+      { id: 'opt-3', text: 'Egois dan tidak mau mengoper bola ke teman satu tim', isCorrect: false, feedback: 'Permainan beregu membutuhkan kekompakan dan kerja sama seluruh anggota.' },
+    ],
+    hint: 'Permainan beregu memerlukan kekompakan dan kepatuhan pada aturan main.',
+  },
+  {
+    id: 'pjok-5',
+    description: 'Di tengah permainan bola mini, Beni melihat Edo tersandung tali sepatu hingga terjatuh dan lututnya sakit.',
+    question: 'Tindakan terpuji apa yang mencerminkan kerukunan dan persahabatan di lapangan?',
+    options: [
+      { id: 'opt-1', text: 'Menghentikan permainan sebentar dan menolong Edo ke ruang UKS atau guru', isCorrect: true, feedback: 'Luar biasa! Sahabat sejati selalu mengutamakan kepedulian dan keselamatan teman di atas segalanya!' },
+      { id: 'opt-2', text: 'Menertawakan teman yang terjatuh di depan regu lawan', isCorrect: false, feedback: 'Menertawakan teman yang terjatuh adalah sikap tidak terpuji.' },
+      { id: 'opt-3', text: 'Membiarkan Edo kesakitan sendirian di rumput', isCorrect: false, feedback: 'Kita harus selalu menolong teman yang kesusahan.' },
+    ],
+    hint: 'Keselamatan teman dan sikap tolong-menolong adalah cermin persahabatan rukun sejati.',
+  },
 ];
 
 export const LapanganPersahabatanLevel: React.FC<LapanganPersahabatanLevelProps> = ({
@@ -83,6 +107,8 @@ export const LapanganPersahabatanLevel: React.FC<LapanganPersahabatanLevelProps>
   const [stars, setStars] = useState(3);
   const [totalScore, setTotalScore] = useState(100);
   const [earnedXP, setEarnedXP] = useState(150);
+  const [showReflectionModal, setShowReflectionModal] = useState(false);
+  const [hasFilledReflection, setHasFilledReflection] = useState(false);
 
   const uciel = getUcielForLocation('lapangan-persahabatan');
   const currentChallenge = PJOK_CHALLENGES[challengeIdx];
@@ -101,7 +127,7 @@ export const LapanganPersahabatanLevel: React.FC<LapanganPersahabatanLevelProps>
         questionText: currentChallenge.question,
         selectedAnswer: opt.text,
         isCorrect: opt.isCorrect,
-        scoreAwarded: opt.isCorrect ? 33 : 0,
+        scoreAwarded: opt.isCorrect ? 20 : 0,
         attemptNumber: 1,
       });
     }
@@ -130,7 +156,7 @@ export const LapanganPersahabatanLevel: React.FC<LapanganPersahabatanLevelProps>
       setGuideEmotion('idle');
       setCustomText(null);
     } else {
-      const calculatedStars = correctCount >= 2 ? 3 : 2;
+      const calculatedStars = correctCount >= 4 ? 3 : correctCount >= 2 ? 2 : 1;
       const calculatedScore = Math.round((correctCount / PJOK_CHALLENGES.length) * 100);
       const calculatedXP = 120 + calculatedStars * 30;
 
@@ -152,12 +178,22 @@ export const LapanganPersahabatanLevel: React.FC<LapanganPersahabatanLevelProps>
 
   return (
     <div className="relative min-h-screen bg-slate-100 flex flex-col">
-      <div className="relative h-44 sm:h-56 w-full overflow-hidden bg-gradient-to-r from-orange-600 via-amber-600 to-red-600 shadow-md">
+      {/* Header Banner with High Quality Visual Illustration */}
+      <div className="relative h-44 sm:h-64 w-full overflow-hidden shadow-md">
+        <img
+          src={LAPANGAN_BG}
+          alt="Lapangan Persahabatan"
+          referrerPolicy="no-referrer"
+          onError={createSafeImageErrorHandler('taman')}
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/35 to-transparent" />
+
         <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
           <button
             type="button"
             onClick={onBackToMap}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/90 hover:bg-white text-gray-800 text-xs sm:text-sm font-black shadow-md backdrop-blur-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/90 hover:bg-white text-gray-800 text-xs sm:text-sm font-black shadow-md backdrop-blur-sm transition-transform active:scale-95"
           >
             <Compass className="w-4 h-4 text-orange-600" />
             <span>Peta Sekolah</span>
@@ -169,7 +205,7 @@ export const LapanganPersahabatanLevel: React.FC<LapanganPersahabatanLevelProps>
           </div>
         </div>
 
-        <div className="absolute bottom-3 left-4 right-4 text-white">
+        <div className="absolute bottom-3 left-4 right-4 text-white z-10">
           <span className="px-2 py-0.5 rounded-md bg-orange-500 font-bold text-[11px] uppercase tracking-wider text-white">
             Tema 1: Hidup Rukun • Gerak Lokomotor & Sportivitas
           </span>
@@ -410,19 +446,51 @@ export const LapanganPersahabatanLevel: React.FC<LapanganPersahabatanLevelProps>
               </div>
             </div>
 
-            <div className="pt-2">
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
                 type="button"
-                onClick={onBackToMap}
-                className="px-8 py-3 rounded-2xl bg-orange-600 hover:bg-orange-700 text-white font-black text-base shadow-lg"
+                onClick={() => {
+                  soundManager.playClick();
+                  setShowReflectionModal(true);
+                }}
+                className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 text-white font-black text-sm shadow-md flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer"
               >
-                Kembali ke Peta Sekolah
+                <span>📝 Isi Refleksi Belajar untuk Guru ✨</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (!hasFilledReflection) {
+                    setShowReflectionModal(true);
+                  } else {
+                    onBackToMap();
+                  }
+                }}
+                className="w-full sm:w-auto px-8 py-3 rounded-2xl bg-orange-600 hover:bg-orange-700 text-white font-black text-base shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer"
+              >
+                <span>Kembali ke Peta Sekolah</span>
               </button>
             </div>
           </motion.div>
         )}
       </div>
 
+      {/* MODAL REFLEKSI PEMBELAJARAN UNTUK DASHBOARD GURU */}
+      <StudentReflectionModal
+        isOpen={showReflectionModal}
+        student={student}
+        studentName={student?.nickname || studentName}
+        levelId="lapangan-persahabatan"
+        levelName="Misi 5: Lapangan Persahabatan (PJOK)"
+        onClose={() => {
+          setShowReflectionModal(false);
+          setHasFilledReflection(true);
+        }}
+        onSubmitted={() => {
+          setHasFilledReflection(true);
+        }}
+      />
     </div>
   );
 };

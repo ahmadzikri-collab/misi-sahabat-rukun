@@ -8,10 +8,12 @@ import { useAntiCheat } from '../../hooks/useAntiCheat';
 import { AntiCheatWatermark } from '../anticheat/AntiCheatWatermark';
 import { AntiCheatModal } from '../anticheat/AntiCheatModal';
 import { AntiCheatBanner } from '../anticheat/AntiCheatBanner';
-import { getUcielForLocation } from '../../data/characters';
+import { getUcielForLocation, PERPUSTAKAAN_BG } from '../../data/characters';
 import { EmotionState, StudentProfile } from '../../types/game';
 import { soundManager } from '../../utils/audio';
 import { gameDb } from '../../services/db';
+import { createSafeImageErrorHandler } from '../../utils/assets';
+import { StudentReflectionModal } from '../StudentReflectionModal';
 
 interface PerpustakaanCeriaLevelProps {
   student?: StudentProfile | null;
@@ -54,6 +56,28 @@ const SENTENCE_CHALLENGES = [
     ],
     hint: 'Gunakan tiga kata ajaib: Tolong, Maaf, dan Terima Kasih!',
   },
+  {
+    id: 'perpus-4',
+    sentence: '"Terima kasih banyak ya Siti, sudah membantuku menemukan buku ensiklopedia hewan."',
+    question: 'Kapan sebaiknya kita mengucapkan kalimat ungkapan terima kasih?',
+    options: [
+      { id: 'opt-1', text: 'Setelah mendapat pertolongan, kebaikan, atau hadiah dari orang lain', isCorrect: true, feedback: 'Pintar sekali! Mengucapkan terima kasih adalah tanda kita menghargai kebaikan teman!' },
+      { id: 'opt-2', text: 'Saat sedang marah karena kalah permainan', isCorrect: false, feedback: 'Ucapan terima kasih diucapkan dengan hati tulus atas kebaikan teman.' },
+      { id: 'opt-3', text: 'Hanya jika disuruh guru saja', isCorrect: false, feedback: 'Kita harus berterima kasih secara spontan dan tulus kepada siapa saja.' },
+    ],
+    hint: 'Ungkapan rasa syukur dan menghargai bantuan teman.',
+  },
+  {
+    id: 'perpus-5',
+    sentence: '"Budi, bolehkah aku meminjam pensil warnamu sebentar?"',
+    question: 'Kalimat di atas merupakan contoh kalimat permintaan izin yang baik karena diawali kata:',
+    options: [
+      { id: 'opt-1', text: 'Bolehkah (meminta izin secara santun sebelum memakai barang orang lain)', isCorrect: true, feedback: 'Tepat sekali! Meminta izin sebelum memakai barang teman adalah cermin anak yang berakhlak mulia!' },
+      { id: 'opt-2', text: 'Ambilkan sekarang juga', isCorrect: false, feedback: 'Itu perintah yang memaksa dan tidak sopan.' },
+      { id: 'opt-3', text: 'Jangan pelit kamu', isCorrect: false, feedback: 'Kata ejekan merusak kerukunan persahabatan.' },
+    ],
+    hint: 'Selalu minta izin secara santun sebelum meminjam barang milik teman.',
+  },
 ];
 
 export const PerpustakaanCeriaLevel: React.FC<PerpustakaanCeriaLevelProps> = ({
@@ -64,6 +88,8 @@ export const PerpustakaanCeriaLevel: React.FC<PerpustakaanCeriaLevelProps> = ({
 }) => {
   const [currentStep, setCurrentStep] = useState<'intro' | 'quiz' | 'result'>('intro');
   const [challengeIdx, setChallengeIdx] = useState(0);
+  const [showReflectionModal, setShowReflectionModal] = useState(false);
+  const [hasFilledReflection, setHasFilledReflection] = useState(false);
 
   // Anti-Cheat System Hook (deteksi pindah tab, printscreen, copy teks)
   const { violationCount, activeAlert, dismissAlert } = useAntiCheat({
@@ -151,13 +177,22 @@ export const PerpustakaanCeriaLevel: React.FC<PerpustakaanCeriaLevelProps> = ({
 
   return (
     <div className="relative min-h-screen bg-slate-100 flex flex-col">
-      {/* Header Banner */}
-      <div className="relative h-44 sm:h-56 w-full overflow-hidden bg-gradient-to-r from-blue-700 via-indigo-600 to-sky-600 shadow-md">
+      {/* Header Banner with High Quality Visual Illustration */}
+      <div className="relative h-44 sm:h-64 w-full overflow-hidden shadow-md">
+        <img
+          src={PERPUSTAKAAN_BG}
+          alt="Perpustakaan Ceria"
+          referrerPolicy="no-referrer"
+          onError={createSafeImageErrorHandler('taman')}
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/35 to-transparent" />
+
         <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
           <button
             type="button"
             onClick={onBackToMap}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/90 hover:bg-white text-gray-800 text-xs sm:text-sm font-black shadow-md backdrop-blur-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/90 hover:bg-white text-gray-800 text-xs sm:text-sm font-black shadow-md backdrop-blur-sm transition-transform active:scale-95"
           >
             <Compass className="w-4 h-4 text-blue-600" />
             <span>Peta Sekolah</span>
@@ -170,7 +205,7 @@ export const PerpustakaanCeriaLevel: React.FC<PerpustakaanCeriaLevelProps> = ({
         </div>
 
         <div className="absolute bottom-3 left-4 right-4 text-white">
-          <span className="px-2 py-0.5 rounded-md bg-blue-500 font-bold text-[11px] uppercase tracking-wider text-white">
+          <span className="px-2 py-0.5 rounded-md bg-blue-600 font-bold text-[11px] uppercase tracking-wider text-white">
             Tema 1: Hidup Rukun • Kalimat Santun
           </span>
           <h1 className="text-xl sm:text-3xl font-black drop-shadow-md flex items-center gap-2 mt-1">
@@ -412,19 +447,52 @@ export const PerpustakaanCeriaLevel: React.FC<PerpustakaanCeriaLevelProps> = ({
               </div>
             </div>
 
-            <div className="pt-2">
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
                 type="button"
-                onClick={onBackToMap}
-                className="px-8 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-base shadow-lg"
+                onClick={() => {
+                  soundManager.playClick();
+                  setShowReflectionModal(true);
+                }}
+                className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 text-white font-black text-sm shadow-md flex items-center justify-center gap-2 cursor-pointer transition-transform active:scale-95"
               >
-                Kembali ke Peta Sekolah
+                <span>📝 Isi Refleksi Belajar untuk Guru ✨</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (!hasFilledReflection) {
+                    setShowReflectionModal(true);
+                  } else {
+                    onBackToMap();
+                  }
+                }}
+                className="w-full sm:w-auto px-8 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-base shadow-lg cursor-pointer transition-transform active:scale-95 flex items-center justify-center gap-2"
+              >
+                <Compass className="w-4 h-4" />
+                <span>Kembali ke Peta Sekolah</span>
               </button>
             </div>
           </motion.div>
         )}
       </div>
 
+      {/* MODAL REFLEKSI PEMBELAJARAN UNTUK DASHBOARD GURU */}
+      <StudentReflectionModal
+        isOpen={showReflectionModal}
+        student={student}
+        studentName={student?.nickname || studentName}
+        levelId="perpustakaan-ceria"
+        levelName="Misi 2: Perpustakaan Ceria (B. Indonesia)"
+        onClose={() => {
+          setShowReflectionModal(false);
+          setHasFilledReflection(true);
+        }}
+        onSubmitted={() => {
+          setHasFilledReflection(true);
+        }}
+      />
     </div>
   );
 };

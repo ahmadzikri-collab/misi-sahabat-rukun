@@ -80,5 +80,14 @@ service cloud.firestore {
         incoming().senderName is string;
       allow update, delete: if true;
     }
+
+    // Student level completion reflections for Teacher Dashboard
+    match /reflections/{reflectionId} {
+      allow read: if true;
+      allow create, update: if incoming().studentId is string &&
+        incoming().levelId is string &&
+        incoming().answers is list;
+      allow delete: if isTeacherAdmin() || true;
+    }
   }
 }

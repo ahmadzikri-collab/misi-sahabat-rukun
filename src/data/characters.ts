@@ -12,10 +12,18 @@ import { resolveAssetUrl, UCIEL_SVG_DATA_URL, TAMAN_PANCASILA_SVG_DATA_URL, SCHO
 import ucielImg from '../assets/images/garuda_uciel_1791815443617.jpg';
 import tamanBgImg from '../assets/images/taman_pancasila_bg_1791811412574.jpg';
 import mapBgImg from '../assets/images/school_adventure_map_1791811444961.jpg';
+import perpusBgImg from '../assets/images/library_reading_corner_1793359746962.jpg';
+import kantinBgImg from '../assets/images/school_canteen_kids_1793359763449.jpg';
+import studioBgImg from '../assets/images/art_creative_studio_1793359781063.jpg';
+import lapanganBgImg from '../assets/images/school_sports_field_1793359799154.jpg';
 
 export const UCIEL_AVATAR = ucielImg || resolveAssetUrl('images/garuda_uciel_1791815443617.jpg') || UCIEL_SVG_DATA_URL;
 export const TAMAN_BG = tamanBgImg || resolveAssetUrl('images/taman_pancasila_bg_1791811412574.jpg') || TAMAN_PANCASILA_SVG_DATA_URL;
 export const SCHOOL_MAP_BG = mapBgImg || resolveAssetUrl('images/school_adventure_map_1791811444961.jpg') || SCHOOL_MAP_SVG_DATA_URL;
+export const PERPUSTAKAAN_BG = perpusBgImg || resolveAssetUrl('images/library_reading_corner_1793359746962.jpg') || TAMAN_PANCASILA_SVG_DATA_URL;
+export const KANTIN_BG = kantinBgImg || resolveAssetUrl('images/school_canteen_kids_1793359763449.jpg') || TAMAN_PANCASILA_SVG_DATA_URL;
+export const STUDIO_BG = studioBgImg || resolveAssetUrl('images/art_creative_studio_1793359781063.jpg') || TAMAN_PANCASILA_SVG_DATA_URL;
+export const LAPANGAN_BG = lapanganBgImg || resolveAssetUrl('images/school_sports_field_1793359799154.jpg') || TAMAN_PANCASILA_SVG_DATA_URL;
 
 export const UCIEL_AVATAR_FALLBACK = UCIEL_SVG_DATA_URL;
 export const TAMAN_BG_FALLBACK = TAMAN_PANCASILA_SVG_DATA_URL;

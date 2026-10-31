@@ -35,7 +35,7 @@ import {
 import { gameDb } from '../services/db';
 import { cloudDb } from '../services/firebase';
 import { antiCheatService, CheatViolationLog } from '../services/antiCheat';
-import { StudentProfile, StudentAttemptLog, TeacherEncouragement } from '../types/game';
+import { StudentProfile, StudentAttemptLog, TeacherEncouragement, StudentReflection } from '../types/game';
 import { soundManager } from '../utils/audio';
 import { UCIEL_AVATAR } from '../data/characters';
 import { createSafeImageErrorHandler } from '../utils/assets';
@@ -133,11 +133,17 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   teacherPhoto,
   onLogout,
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'levels' | 'students' | 'leaderboard' | 'attempts' | 'anticheat' | 'messages' | 'security' | 'guides'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'levels' | 'students' | 'leaderboard' | 'attempts' | 'reflections' | 'anticheat' | 'messages' | 'security' | 'guides'>('overview');
   const [students, setStudents] = useState<StudentProfile[]>(gameDb.getAllStudents());
   const [attemptLogs, setAttemptLogs] = useState<StudentAttemptLog[]>(gameDb.getAttemptLogs());
   const [cheatLogs, setCheatLogs] = useState<CheatViolationLog[]>(() => antiCheatService.getAllViolationLogs());
   const [encouragements, setEncouragements] = useState<TeacherEncouragement[]>(gameDb.getAllEncouragements());
+  const [reflections, setReflections] = useState<StudentReflection[]>(() => gameDb.getStudentReflections());
+  const [reflectionSearch, setReflectionSearch] = useState('');
+  const [reflectionClassFilter, setReflectionClassFilter] = useState('all');
+  const [reflectionLevelFilter, setReflectionLevelFilter] = useState('all');
+  const [feedbackInputs, setFeedbackInputs] = useState<Record<string, string>>({});
+  const [feedbackSuccessId, setFeedbackSuccessId] = useState<string | null>(null);
   const [targetStudentId, setTargetStudentId] = useState<string>('all');
   const [customEncouragementText, setCustomEncouragementText] = useState<string>('');
   const [selectedEmoji, setSelectedEmoji] = useState<string>('⭐');
@@ -146,7 +152,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   const [isClearMessagesModalOpen, setIsClearMessagesModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Real-time synchronization of anti-cheat logs from Firebase Cloud
+  // Real-time synchronization of anti-cheat logs, messages, and student reflections from Firebase Cloud
   useEffect(() => {
     const unsubCheat = cloudDb.subscribeToCheatViolations?.((logs) => {
       setCheatLogs(logs || []);
@@ -154,9 +160,24 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     const unsubMsg = gameDb.subscribeToEncouragements((msgs) => {
       setEncouragements(msgs || []);
     });
+    const unsubReflections = cloudDb.subscribeToReflections?.((refls) => {
+      if (refls && refls.length > 0) {
+        setReflections(refls);
+      }
+    });
+
+    const handleLocalReflectionUpdate = () => {
+      setReflections(gameDb.getStudentReflections());
+    };
+    window.addEventListener('msr_reflections_updated', handleLocalReflectionUpdate);
+    window.addEventListener('storage', handleLocalReflectionUpdate);
+
     return () => {
       unsubCheat?.();
       unsubMsg?.();
+      unsubReflections?.();
+      window.removeEventListener('msr_reflections_updated', handleLocalReflectionUpdate);
+      window.removeEventListener('storage', handleLocalReflectionUpdate);
     };
   }, []);
 
@@ -595,6 +616,138 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     setEmailMsg({ type: 'success', text: `Email ${emailToRemove} telah dihapus.` });
   };
 
+  // Helper to extract answer by question ID
+  const getReflectionAnswerText = (refl: StudentReflection, qId: string): string => {
+    if (Array.isArray(refl.answers)) {
+      const found = refl.answers.find((a) => a.questionId === qId);
+      if (found && found.answerText) return found.answerText;
+      const idx = parseInt(qId.replace('q', ''), 10) - 1;
+      if (idx >= 0 && refl.answers[idx] && refl.answers[idx].answerText) {
+        return refl.answers[idx].answerText;
+      }
+    }
+    return '-';
+  };
+
+  // Student Reflections Management
+  const handleGiveTeacherFeedback = async (reflectionId: string, customFeedback?: string) => {
+    soundManager.playClick();
+    const text = (customFeedback || feedbackInputs[reflectionId] || '').trim();
+    if (!text) return;
+
+    const teacherDisplayName = teacherName || teacherEmail || 'Ibu/Bapak Guru';
+
+    // 1. Update local storage
+    gameDb.addTeacherFeedbackToReflection(reflectionId, text);
+
+    // 2. Update Cloud Firestore
+    try {
+      await cloudDb.updateReflectionFeedback?.(reflectionId, text);
+    } catch (err) {
+      console.warn('Could not sync teacher feedback to Cloud Firestore:', err);
+    }
+
+    // 3. Update state
+    setReflections((prev) =>
+      prev.map((r) =>
+        r.id === reflectionId
+          ? {
+              ...r,
+              teacherFeedback: text,
+              teacherFeedbackAt: new Date().toISOString(),
+              feedbackBy: teacherDisplayName,
+            }
+          : r
+      )
+    );
+
+    setFeedbackSuccessId(reflectionId);
+    setTimeout(() => {
+      setFeedbackSuccessId(null);
+    }, 2500);
+
+    setFeedbackInputs((prev) => ({ ...prev, [reflectionId]: '' }));
+    soundManager.playSuccess();
+  };
+
+  const handleDeleteReflection = async (reflectionId: string) => {
+    if (!window.confirm('Hapus kartu refleksi ini?')) return;
+    soundManager.playClick();
+    gameDb.deleteStudentReflection(reflectionId);
+    try {
+      await cloudDb.deleteStudentReflection?.(reflectionId);
+    } catch (err) {
+      console.warn('Could not delete reflection from Cloud Firestore:', err);
+    }
+    setReflections((prev) => prev.filter((r) => r.id !== reflectionId));
+  };
+
+  const handleDownloadReflectionsCSV = () => {
+    soundManager.playClick();
+    if (reflections.length === 0) return;
+    const headers = [
+      'Waktu',
+      'Nama Siswa',
+      'Kelas',
+      'Misi',
+      'Pelajaran Hari Ini',
+      'Cara Membantu Teman',
+      'Beda Pendapat',
+      'Materi Paling Sulit',
+      'Catatan Guru',
+      'Dibalas Oleh',
+    ];
+    const rows = reflections.map((r) => [
+      `"${new Date(r.submittedAt || r.timestamp || Date.now()).toLocaleString('id-ID')}"`,
+      `"${(r.studentName || '').replace(/"/g, '""')}"`,
+      `"${(r.classCode || '').replace(/"/g, '""')}"`,
+      `"${(r.levelName || r.levelId || '').replace(/"/g, '""')}"`,
+      `"${getReflectionAnswerText(r, 'q1').replace(/"/g, '""')}"`,
+      `"${getReflectionAnswerText(r, 'q2').replace(/"/g, '""')}"`,
+      `"${getReflectionAnswerText(r, 'q3').replace(/"/g, '""')}"`,
+      `"${getReflectionAnswerText(r, 'q4').replace(/"/g, '""')}"`,
+      `"${(r.teacherFeedback || '').replace(/"/g, '""')}"`,
+      `"${(r.feedbackBy || 'Guru').replace(/"/g, '""')}"`,
+    ]);
+    const csvContent =
+      'data:text/csv;charset=utf-8,\uFEFF' +
+      [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute(
+      'download',
+      `Refleksi_Siswa_SD_INDONESIA_EMAS_${new Date().toISOString().slice(0, 10)}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const filteredReflections = reflections.filter((r) => {
+    if (!r) return false;
+    if (reflectionClassFilter !== 'all' && r.classCode !== reflectionClassFilter) return false;
+    if (reflectionLevelFilter !== 'all' && r.levelId !== reflectionLevelFilter) return false;
+    const q = (reflectionSearch || '').trim().toLowerCase();
+    if (!q) return true;
+    const sName = String(r.studentName || '').toLowerCase();
+    const cCode = String(r.classCode || '').toLowerCase();
+    const lName = String(r.levelName || '').toLowerCase();
+    const a1 = getReflectionAnswerText(r, 'q1').toLowerCase();
+    const a2 = getReflectionAnswerText(r, 'q2').toLowerCase();
+    const a3 = getReflectionAnswerText(r, 'q3').toLowerCase();
+    const a4 = getReflectionAnswerText(r, 'q4').toLowerCase();
+    return (
+      sName.includes(q) ||
+      cCode.includes(q) ||
+      lName.includes(q) ||
+      a1.includes(q) ||
+      a2.includes(q) ||
+      a3.includes(q) ||
+      a4.includes(q)
+    );
+  });
+
   const filteredStudents = (students || []).filter((s) => {
     if (!s) return false;
     const isOnline = isStudentActiveNow(s);
@@ -761,6 +914,24 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
             }`}
           >
             📝 Log Jawaban Siswa
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('reflections')}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+              activeTab === 'reflections'
+                ? 'bg-amber-500 text-slate-950 font-black shadow-md'
+                : 'text-slate-400 hover:text-white hover:bg-slate-700'
+            }`}
+          >
+            <MessageCircle className="w-4 h-4 text-emerald-400" />
+            <span>💭 Refleksi Siswa</span>
+            {reflections.length > 0 && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                {reflections.length}
+              </span>
+            )}
           </button>
 
           <button
@@ -1689,6 +1860,330 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                 </table>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* TAB: REFLEKSI SISWA (KARAKTER, EMPATI & PEMAHAMAN MATERI) */}
+        {activeTab === 'reflections' && (
+          <div className="space-y-6">
+            {/* Header section with Stats & Controls */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-2 border-b border-slate-700">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+                  <MessageCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-base sm:text-xl font-black text-white flex items-center gap-2">
+                    <span>Refleksi Siswa: Karakter & Pemahaman Materi</span>
+                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold">
+                      {reflections.length} Terkumpul
+                    </span>
+                  </h2>
+                  <p className="text-xs text-slate-400">
+                    Jawaban siswa setelah menuntaskan misi: materi dipelajari, empati membantu teman, musyawarah, dan kesulitan belajar.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={handleDownloadReflectionsCSV}
+                  disabled={reflections.length === 0}
+                  className={`px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all ${
+                    reflections.length > 0
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer active:scale-95'
+                      : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                  }`}
+                  title="Unduh rekapan refleksi siswa dalam format CSV / Excel"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Unduh CSV Refleksi</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Stats Banner */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black">
+                  📝
+                </div>
+                <div>
+                  <div className="text-xs text-slate-400 font-bold">Total Refleksi Masuk</div>
+                  <div className="text-2xl font-black text-white">{reflections.length}</div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center font-black">
+                  👥
+                </div>
+                <div>
+                  <div className="text-xs text-slate-400 font-bold">Siswa yang Berpartisipasi</div>
+                  <div className="text-2xl font-black text-white">
+                    {new Set(reflections.map((r) => r.studentId || r.studentName)).size} Siswa
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-black">
+                  💬
+                </div>
+                <div>
+                  <div className="text-xs text-slate-400 font-bold">Telah Diberi Catatan Guru</div>
+                  <div className="text-2xl font-black text-white">
+                    {reflections.filter((r) => Boolean(r.teacherFeedback)).length} / {reflections.length}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Search and Filters */}
+            <div className="p-4 rounded-2xl bg-slate-800/60 border border-slate-700 flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={reflectionSearch}
+                  onChange={(e) => setReflectionSearch(e.target.value)}
+                  placeholder="Cari berdasarkan nama siswa atau kata kunci jawaban refleksi..."
+                  className="w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5">
+                  <Filter className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="text-xs text-slate-400 font-semibold">Kelas:</span>
+                  <select
+                    value={reflectionClassFilter}
+                    onChange={(e) => setReflectionClassFilter(e.target.value)}
+                    className="bg-transparent text-xs text-white font-bold focus:outline-none cursor-pointer"
+                  >
+                    <option value="all" className="bg-slate-900">Semua Kelas</option>
+                    {Array.from(new Set(reflections.map((r) => r.classCode).filter(Boolean))).map((cls) => (
+                      <option key={cls} value={cls} className="bg-slate-900">
+                        {cls}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5">
+                  <span className="text-xs text-slate-400 font-semibold">Misi:</span>
+                  <select
+                    value={reflectionLevelFilter}
+                    onChange={(e) => setReflectionLevelFilter(e.target.value)}
+                    className="bg-transparent text-xs text-white font-bold focus:outline-none cursor-pointer"
+                  >
+                    <option value="all" className="bg-slate-900">Semua Misi</option>
+                    <option value="taman-pancasila" className="bg-slate-900">Misi 1: Taman Pancasila (PPKn)</option>
+                    <option value="perpustakaan-ceria" className="bg-slate-900">Misi 2: Perpustakaan Ceria (B. Indo)</option>
+                    <option value="kantin-pintar" className="bg-slate-900">Misi 3: Kantin Pintar (Matematika)</option>
+                    <option value="studio-kreatif" className="bg-slate-900">Misi 4: Studio Kreatif (SBdP)</option>
+                    <option value="lapangan-persahabatan" className="bg-slate-900">Misi 5: Lapangan Persahabatan (PJOK)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Reflection Cards Feed */}
+            {filteredReflections.length === 0 ? (
+              <div className="p-12 text-center rounded-3xl bg-slate-800/40 border border-slate-700 space-y-3">
+                <div className="w-16 h-16 mx-auto rounded-3xl bg-emerald-500/10 flex items-center justify-center text-3xl">
+                  📝
+                </div>
+                <h3 className="text-lg font-black text-white">Belum Ada Lembar Refleksi Siswa</h3>
+                <p className="text-xs text-slate-400 max-w-md mx-auto">
+                  {reflections.length === 0
+                    ? 'Setelah siswa menyelesaikan salah satu level misi, modal refleksi 4 pertanyaan akan muncul otomatis dan jawaban siswa akan langsung tersimpan di sini secara realtime!'
+                    : 'Tidak ada refleksi yang cocok dengan filter pencarian.'}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredReflections.map((refl) => {
+                  const dateStr = new Date(refl.submittedAt || refl.timestamp || Date.now()).toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  });
+
+                  return (
+                    <div
+                      key={refl.id}
+                      className="p-5 rounded-3xl bg-slate-800/90 border-2 border-slate-700 hover:border-slate-600 shadow-xl transition-all space-y-4"
+                    >
+                      {/* Card Header */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-700/80 gap-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-slate-950 flex items-center justify-center font-black text-base shadow-sm">
+                            {refl.studentName?.charAt(0)?.toUpperCase() || 'S'}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-sm sm:text-base font-black text-white">
+                                {refl.studentName}
+                              </h3>
+                              <span className="px-2 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300 font-extrabold text-[11px] border border-emerald-500/30">
+                                Kelas {refl.classCode || '2A'}
+                              </span>
+                            </div>
+                            <p className="text-xs font-semibold text-amber-300">
+                              📍 {refl.levelName || refl.levelId}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 self-end sm:self-auto">
+                          <span className="text-[11px] text-slate-400 flex items-center gap-1 font-semibold">
+                            <Clock className="w-3.5 h-3.5" />
+                            {dateStr}
+                          </span>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteReflection(refl.id)}
+                            className="p-1.5 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-slate-700/60 transition-colors"
+                            title="Hapus kartu refleksi ini"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 4 Reflection Answers Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                        {/* Pertanyaan 1: Apa yang dipelajari */}
+                        <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-emerald-500/30 space-y-1.5">
+                          <div className="flex items-center gap-1.5 text-emerald-400 font-black text-[11px] uppercase tracking-wider">
+                            <span>💡</span>
+                            <span>Apa yang kamu pelajari hari ini?</span>
+                          </div>
+                          <p className="text-sm font-bold text-slate-100 bg-slate-800/80 p-2.5 rounded-xl border border-slate-700">
+                            "{getReflectionAnswerText(refl, 'q1')}"
+                          </p>
+                        </div>
+
+                        {/* Pertanyaan 2: Cara membantu teman */}
+                        <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-sky-500/30 space-y-1.5">
+                          <div className="flex items-center gap-1.5 text-sky-400 font-black text-[11px] uppercase tracking-wider">
+                            <span>🤝</span>
+                            <span>Bagaimana cara membantu teman?</span>
+                          </div>
+                          <p className="text-sm font-bold text-slate-100 bg-slate-800/80 p-2.5 rounded-xl border border-slate-700">
+                            "{getReflectionAnswerText(refl, 'q2')}"
+                          </p>
+                        </div>
+
+                        {/* Pertanyaan 3: Ketika berbeda pendapat */}
+                        <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-purple-500/30 space-y-1.5">
+                          <div className="flex items-center gap-1.5 text-purple-400 font-black text-[11px] uppercase tracking-wider">
+                            <span>🕊️</span>
+                            <span>Apa yang dilakukan saat berbeda pendapat?</span>
+                          </div>
+                          <p className="text-sm font-bold text-slate-100 bg-slate-800/80 p-2.5 rounded-xl border border-slate-700">
+                            "{getReflectionAnswerText(refl, 'q3')}"
+                          </p>
+                        </div>
+
+                        {/* Pertanyaan 4: Materi paling sulit */}
+                        <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-amber-500/30 space-y-1.5">
+                          <div className="flex items-center gap-1.5 text-amber-400 font-black text-[11px] uppercase tracking-wider">
+                            <span>🎯</span>
+                            <span>Materi apa yang paling sulit?</span>
+                          </div>
+                          <p className="text-sm font-bold text-slate-100 bg-slate-800/80 p-2.5 rounded-xl border border-slate-700">
+                            "{getReflectionAnswerText(refl, 'q4')}"
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Teacher Feedback / Reaction Area */}
+                      <div className="pt-2 border-t border-slate-700/60 space-y-2.5">
+                        {refl.teacherFeedback && (
+                          <div className="p-3 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-xs space-y-1">
+                            <div className="flex items-center justify-between text-amber-300 font-bold">
+                              <span className="flex items-center gap-1.5">
+                                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                                <span>Catatan Guru ({refl.feedbackBy || 'Guru'})</span>
+                              </span>
+                              {refl.teacherFeedbackAt && (
+                                <span className="text-[10px] text-amber-300/80">
+                                  {new Date(refl.teacherFeedbackAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm font-bold text-amber-100">
+                              "{refl.teacherFeedback}"
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Quick Praise Chips */}
+                        <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                          <span className="text-[11px] text-slate-400 font-bold mr-1">
+                            Beri Pujian Cepat:
+                          </span>
+                          {[
+                            '🌟 Luar biasa bijak dan hebat!',
+                            '🤝 Sikap rukunmu sangat baik!',
+                            '💪 Tetap semangat belajar terus ya!',
+                            '❤️ Ibu/Bapak guru sangat bangga padamu!',
+                          ].map((chip) => (
+                            <button
+                              key={chip}
+                              type="button"
+                              onClick={() => handleGiveTeacherFeedback(refl.id, chip)}
+                              className="px-2.5 py-1 rounded-xl bg-slate-700/60 hover:bg-emerald-600/30 hover:border-emerald-500/50 text-slate-300 hover:text-emerald-300 border border-slate-600 text-xs font-bold transition-all active:scale-95"
+                            >
+                              {chip}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Custom Feedback Form */}
+                        <div className="flex items-center gap-2 pt-1">
+                          <input
+                            type="text"
+                            value={feedbackInputs[refl.id] || ''}
+                            onChange={(e) =>
+                              setFeedbackInputs((prev) => ({ ...prev, [refl.id]: e.target.value }))
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                handleGiveTeacherFeedback(refl.id);
+                              }
+                            }}
+                            placeholder="Tulis catatan apresiasi / bimbingan khusus untuk siswa ini..."
+                            className="flex-1 px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleGiveTeacherFeedback(refl.id)}
+                            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md transition-transform active:scale-95 flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                            <span>Kirim Balasan</span>
+                          </button>
+                        </div>
+
+                        {feedbackSuccessId === refl.id && (
+                          <div className="text-[11px] font-bold text-emerald-400 flex items-center gap-1 animate-pulse">
+                            <Check className="w-3 h-3" />
+                            <span>Catatan apresiasi guru berhasil disimpan & disinkronkan ke Cloud!</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 

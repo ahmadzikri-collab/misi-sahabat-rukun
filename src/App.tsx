@@ -236,6 +236,8 @@ export default function App() {
     const progress = gameDb.getLevelProgress(student.id);
     setLevelProgress(progress);
     gameDb.updateStudentPresence(student.id, true, '🗺️ Di Peta Sekolah SD INDONESIA EMAS');
+    // Mulai background music petualangan yang ceria dan halus
+    soundManager.startMusic();
     triggerViewTransition(
       'map',
       `Selamat Datang, ${student.nickname}!`,
@@ -246,6 +248,7 @@ export default function App() {
 
   const handleExitGame = () => {
     soundManager.playClick();
+    soundManager.stopMusic();
     if (currentStudent) {
       gameDb.updateStudentPresence(currentStudent.id, false, '⚪ Offline (Keluar Game)');
       gameDb.setCurrentStudent(null);

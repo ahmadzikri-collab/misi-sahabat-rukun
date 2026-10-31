@@ -24,7 +24,7 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
-import { StudentProfile, LevelProgress, StudentAttemptLog, TeacherEncouragement } from '../types/game';
+import { StudentProfile, LevelProgress, StudentAttemptLog, TeacherEncouragement, StudentReflection } from '../types/game';
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -110,21 +110,57 @@ export interface GoogleAuthResult {
   };
 }
 
+let isGoogleSignInInProgress = false;
+
 // Teacher Authentication via Google with detailed error diagnostic
 export async function signInTeacherWithGoogle(): Promise<GoogleAuthResult> {
   const currentDomain = typeof window !== 'undefined' ? window.location.hostname : '';
-  try {
-    const result = await signInWithPopup(auth, googleProvider);
-    return { user: result.user };
-  } catch (err: any) {
-    console.error('Google Sign-in failed:', err);
+
+  // Prevent concurrent / double-invocations which trigger "INTERNAL ASSERTION FAILED: Pending promise was never set"
+  if (isGoogleSignInInProgress) {
     return {
       error: {
-        code: err?.code || 'auth/unknown',
-        message: err?.message || 'Login Google gagal.',
+        code: 'auth/cancelled-popup-request',
+        message: 'Proses login sedang berjalan. Silakan selesaikan jendela yang terbuka.',
         domain: currentDomain,
       },
     };
+  }
+
+  isGoogleSignInInProgress = true;
+  try {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    const result = await signInWithPopup(auth, provider);
+    return { user: result.user };
+  } catch (err: any) {
+    const errorCode = err?.code || 'auth/unknown';
+    const isUserCancellation =
+      errorCode === 'auth/popup-closed-by-user' ||
+      errorCode === 'auth/cancelled-popup-request' ||
+      String(err?.message || '').includes('Pending promise was never set');
+
+    // User closing popup or cancelling is normal user interaction, not a fatal runtime failure
+    if (isUserCancellation) {
+      console.info('Google Sign-in popup was closed or cancelled by user.');
+    } else {
+      console.warn('Google Sign-in notice:', errorCode, err?.message);
+    }
+
+    return {
+      error: {
+        code: errorCode,
+        message: isUserCancellation
+          ? 'Jendela login Google ditutup sebelum selesai.'
+          : err?.message || 'Login Google gagal.',
+        domain: currentDomain,
+      },
+    };
+  } finally {
+    // Small delay before clearing mutex to allow browser window cleanup to complete smoothly
+    setTimeout(() => {
+      isGoogleSignInInProgress = false;
+    }, 400);
   }
 }
 
@@ -614,6 +650,72 @@ export const cloudDb = {
       const batch = writeBatch(db);
       snap.docs.forEach((docRef) => batch.delete(docRef.ref));
       await batch.commit();
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, path);
+    }
+  },
+
+  // Student Learning Reflections
+  async saveStudentReflection(reflection: StudentReflection): Promise<void> {
+    const path = `reflections/${reflection.id}`;
+    try {
+      await setDoc(doc(db, 'reflections', reflection.id), reflection);
+    } catch (error) {
+      console.warn('saveStudentReflection cloud fallback:', error);
+    }
+  },
+
+  async getStudentReflections(limitCount = 100): Promise<StudentReflection[]> {
+    const path = 'reflections';
+    try {
+      const q = query(collection(db, path), orderBy('submittedAt', 'desc'), limit(limitCount));
+      const snap = await getDocs(q);
+      const list: StudentReflection[] = [];
+      snap.forEach((d) => list.push(d.data() as StudentReflection));
+      return list;
+    } catch (error) {
+      console.warn('getStudentReflections fallback:', error);
+      return [];
+    }
+  },
+
+  subscribeToReflections(callback: (reflections: StudentReflection[]) => void): () => void {
+    const path = 'reflections';
+    try {
+      const q = query(collection(db, path), orderBy('submittedAt', 'desc'), limit(100));
+      return onSnapshot(
+        q,
+        (snap) => {
+          const list: StudentReflection[] = [];
+          snap.forEach((d) => list.push(d.data() as StudentReflection));
+          callback(list);
+        },
+        (error) => {
+          console.warn('Realtime reflections listener error:', error.message);
+        }
+      );
+    } catch (e) {
+      console.warn('Could not establish reflections listener:', e);
+      return () => {};
+    }
+  },
+
+  async updateReflectionFeedback(reflectionId: string, feedback: string): Promise<void> {
+    const path = `reflections/${reflectionId}`;
+    try {
+      await updateDoc(doc(db, 'reflections', reflectionId), {
+        teacherFeedback: feedback,
+        teacherFeedbackAt: new Date().toISOString(),
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, path);
+    }
+  },
+
+  async deleteStudentReflection(reflectionId: string): Promise<void> {
+    const path = `reflections/${reflectionId}`;
+    try {
+      await deleteDoc(doc(db, 'reflections', reflectionId));
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, path);
     }

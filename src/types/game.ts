@@ -137,3 +137,24 @@ export interface StudentLeaderboardEntry {
   lastActive: string;
 }
 
+export interface ReflectionAnswer {
+  questionId: string;
+  questionText: string;
+  answerText: string;
+}
+
+export interface StudentReflection {
+  id: string;
+  studentId: string;
+  studentName: string;
+  classCode: string;
+  levelId: string;
+  levelName: string;
+  answers: ReflectionAnswer[];
+  submittedAt: string;
+  timestamp?: string; // alias for compatibility
+  teacherFeedback?: string;
+  teacherFeedbackAt?: string;
+  feedbackBy?: string;
+}
+

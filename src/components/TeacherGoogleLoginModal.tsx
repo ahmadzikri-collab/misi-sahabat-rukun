@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, X, AlertCircle, Globe, Copy, Check, LogIn } from 'lucide-react';
+import { Shield, X, AlertCircle, Globe, Copy, Check } from 'lucide-react';
 import { soundManager } from '../utils/audio';
 import { gameDb } from '../services/db';
 import { signInTeacherWithGoogle } from '../services/firebase';
@@ -23,6 +23,7 @@ export const TeacherGoogleLoginModal: React.FC<TeacherGoogleLoginModalProps> = (
   if (!isOpen) return null;
 
   const handleGoogleSignIn = async () => {
+    if (isGoogleLoading) return;
     setIsGoogleLoading(true);
     setErrorMsg(null);
     setDomainHelp(null);
@@ -38,26 +39,24 @@ export const TeacherGoogleLoginModal: React.FC<TeacherGoogleLoginModalProps> = (
         } else {
           soundManager.playEncourage();
           setErrorMsg(
-            `Akses Ditolak: Akun Google (${res.user.email || 'tanpa email'}) bukan akun Guru terdaftar. Siswa tidak diizinkan masuk ke Dashboard Guru.`
+            `Akses Ditolak: Akun Google (${res.user.email || 'tanpa email'}) belum terdaftar di whitelist Guru.`
           );
         }
       } else if (res.error) {
         if (res.error.code === 'auth/unauthorized-domain') {
           const dom = res.error.domain || window.location.hostname;
           setDomainHelp(dom);
-          setErrorMsg(
-            `Domain "${dom}" belum diizinkan di Firebase Authentication.`
-          );
+          setErrorMsg(`Domain "${dom}" belum diizinkan di Firebase Authentication.`);
         } else if (res.error.code === 'auth/popup-blocked') {
-          setErrorMsg('Jendela pop-up login Google diblokir oleh peramban. Silakan izinkan pop-up di browser Anda.');
-        } else if (res.error.code === 'auth/popup-closed-by-user') {
-          setErrorMsg('Proses login Google dibatalkan sebelum selesai.');
+          setErrorMsg('Jendela pop-up login Google diblokir oleh peramban. Silakan izinkan pop-up.');
+        } else if (res.error.code === 'auth/popup-closed-by-user' || res.error.code === 'auth/cancelled-popup-request') {
+          setErrorMsg('Jendela login Google ditutup sebelum proses selesai.');
         } else {
           setErrorMsg(`Gagal masuk dengan Google (${res.error.message || res.error.code}).`);
         }
       }
-    } catch (e: any) {
-      setErrorMsg('Terjadi kesalahan saat menghubungkan ke akun Google.');
+    } catch {
+      setErrorMsg('Terjadi kendala saat membuka login Google.');
     } finally {
       setIsGoogleLoading(false);
     }
@@ -77,7 +76,7 @@ export const TeacherGoogleLoginModal: React.FC<TeacherGoogleLoginModalProps> = (
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+          className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
@@ -89,14 +88,14 @@ export const TeacherGoogleLoginModal: React.FC<TeacherGoogleLoginModalProps> = (
             </div>
           </div>
           <h3 className="text-xl font-black text-white">
-            Login Dashboard Guru
+            Login Portal Guru
           </h3>
           <p className="text-xs text-slate-300">
             Masuk dengan <strong>Akun Google Guru</strong> (Firebase Authentication) untuk mengakses data ketuntasan kelas dan kontrol petualangan.
           </p>
         </div>
 
-        {/* Google Sign-in button */}
+        {/* Google Sign-in */}
         <div className="space-y-4 pt-1">
           <button
             type="button"
@@ -125,53 +124,49 @@ export const TeacherGoogleLoginModal: React.FC<TeacherGoogleLoginModalProps> = (
             <span>{isGoogleLoading ? 'Menghubungkan ke Google...' : 'Masuk dengan Akun Google'}</span>
           </button>
 
-          {/* Email Whitelist Info */}
           <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700 text-center text-[11px] text-slate-300">
             <span className="text-slate-400">Akun terdaftar bawaan: </span>
             <code className="text-amber-300 font-mono font-bold">ahmadzikri1420@gmail.com</code>
           </div>
-
-          {/* Error Message */}
-          {errorMsg && (
-            <div className="p-3 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-bold flex items-center gap-2 text-left">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              <span>{errorMsg}</span>
-            </div>
-          )}
-
-          {/* Authorized Domain Helper if domain is not registered in Firebase */}
-          {domainHelp && (
-            <div className="p-3.5 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs space-y-2 text-left">
-              <div className="flex items-center gap-1.5 font-bold text-amber-300">
-                <Globe className="w-4 h-4 text-amber-400 flex-shrink-0" />
-                <span>Domain GitHub Pages Belum Diizinkan:</span>
-              </div>
-              <p className="text-[11px] text-slate-300 leading-relaxed">
-                Agar login Google aktif di domain Anda, tambahkan domain ini ke Firebase Console:
-              </p>
-              <div className="flex items-center justify-between gap-2 bg-slate-950 p-2 rounded-xl font-mono text-emerald-300 text-[11px] border border-slate-700">
-                <span className="truncate">{domainHelp}</span>
-                <button
-                  type="button"
-                  onClick={handleCopyDomain}
-                  className="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-[10px] flex items-center gap-1 flex-shrink-0 transition-colors"
-                >
-                  {copiedDomain ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                  <span>{copiedDomain ? 'Tersalin!' : 'Salin Domain'}</span>
-                </button>
-              </div>
-              <p className="text-[10px] text-slate-400">
-                Buka: <strong>Firebase Console $\rightarrow$ Authentication $\rightarrow$ Settings $\rightarrow$ Authorized domains $\rightarrow$ Add domain</strong>.
-              </p>
-            </div>
-          )}
         </div>
+
+        {/* Pesan Error / Notifikasi */}
+        {errorMsg && (
+          <div className="p-3 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-bold flex items-center gap-2 text-left">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span>{errorMsg}</span>
+          </div>
+        )}
+
+        {/* Authorized Domain Helper if domain is not registered in Firebase */}
+        {domainHelp && (
+          <div className="p-3.5 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs space-y-2 text-left">
+            <div className="flex items-center gap-1.5 font-bold text-amber-300">
+              <Globe className="w-4 h-4 text-amber-400 flex-shrink-0" />
+              <span>Domain Belum Diizinkan di Firebase:</span>
+            </div>
+            <p className="text-[11px] text-slate-300 leading-relaxed">
+              Daftarkan domain berikut di Firebase Console (Authentication $\rightarrow$ Settings $\rightarrow$ Authorized domains):
+            </p>
+            <div className="flex items-center justify-between gap-2 bg-slate-950 p-2 rounded-xl font-mono text-emerald-300 text-[11px] border border-slate-700">
+              <span className="truncate">{domainHelp}</span>
+              <button
+                type="button"
+                onClick={handleCopyDomain}
+                className="px-2.5 py-1 rounded bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-[10px] flex items-center gap-1 flex-shrink-0 transition-colors cursor-pointer"
+              >
+                {copiedDomain ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                <span>{copiedDomain ? 'Tersalin!' : 'Salin'}</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="flex items-center justify-end pt-2">
           <button
             type="button"
             onClick={onClose}
-            className="w-full py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 transition-colors text-center"
+            className="w-full py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 transition-colors text-center cursor-pointer"
           >
             Kembali ke Permainan
           </button>

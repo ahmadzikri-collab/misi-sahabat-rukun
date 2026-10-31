@@ -134,7 +134,7 @@ function playHarmonicTone(
   }
 }
 
-function playMusicBoxNote(freq: number, delaySec: number) {
+function playMusicBoxNote(freq: number, delaySec: number, duration = 0.55, gainLevel = 0.045, type: OscillatorType = 'triangle') {
   if (!isMusicPlaying || isSoundMuted) return;
   try {
     const ctx = getAudioContext();
@@ -143,39 +143,101 @@ function playMusicBoxNote(freq: number, delaySec: number) {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
-    osc.type = 'sine';
+    osc.type = type;
     osc.frequency.setValueAtTime(freq, startTime);
 
-    // Envelope lembut namun terdengar jelas
+    // Warm, smooth bell-like envelope with gentle release
     gain.gain.setValueAtTime(0.0001, startTime);
-    gain.gain.linearRampToValueAtTime(0.08, startTime + 0.015);
-    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.38);
+    gain.gain.linearRampToValueAtTime(gainLevel, startTime + 0.025);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
 
     osc.connect(gain);
     gain.connect(master);
 
     osc.start(startTime);
-    osc.stop(startTime + 0.40);
+    osc.stop(startTime + duration + 0.05);
   } catch {
     // Ignore audio context state
   }
 }
 
-function playMusicBoxMelody() {
+/**
+ * Petualangan Sahabat Rukun BGM
+ * Nada lembut, ceria, hangat, dan ramah anak kelas 2 SD (C Major / G Major Pentatonic)
+ * Menggunakan akord harmonis dan melodi mengalir yang berulang mulus tanpa hentakan
+ */
+function playMusicBoxMelody(sectionIndex = 0) {
   if (!isMusicPlaying || isSoundMuted) return;
-  const phrase = [
-    { freq: 523.25, time: 0.0 }, // C5
-    { freq: 659.25, time: 0.4 }, // E5
-    { freq: 783.99, time: 0.8 }, // G5
-    { freq: 880.0, time: 1.2 },  // A5
-    { freq: 783.99, time: 1.6 }, // G5
-    { freq: 659.25, time: 2.1 }, // E5
-    { freq: 587.33, time: 2.5 }, // D5
-    { freq: 523.25, time: 3.0 }, // C5
+
+  // Harmonious chord pads (Root chords: C -> Am -> F -> G)
+  const chordSequences = [
+    // Phrase 1: C - G - Am - F progression (Joyful Exploration)
+    [
+      // Bar 1 (C Major)
+      { freq: 261.63, time: 0.0, dur: 1.8, gain: 0.025, type: 'sine' as const }, // Bass C4
+      { freq: 523.25, time: 0.0, dur: 0.5, gain: 0.04, type: 'triangle' as const },  // Melody C5
+      { freq: 659.25, time: 0.35, dur: 0.5, gain: 0.04, type: 'triangle' as const }, // E5
+      { freq: 783.99, time: 0.7, dur: 0.5, gain: 0.04, type: 'triangle' as const },  // G5
+      { freq: 1046.5, time: 1.05, dur: 0.6, gain: 0.035, type: 'sine' as const },    // C6
+      { freq: 783.99, time: 1.45, dur: 0.45, gain: 0.035, type: 'triangle' as const }, // G5
+
+      // Bar 2 (G Major)
+      { freq: 196.00, time: 2.0, dur: 1.8, gain: 0.025, type: 'sine' as const }, // Bass G3
+      { freq: 587.33, time: 2.0, dur: 0.5, gain: 0.04, type: 'triangle' as const },  // D5
+      { freq: 783.99, time: 2.35, dur: 0.5, gain: 0.04, type: 'triangle' as const }, // G5
+      { freq: 880.00, time: 2.7, dur: 0.5, gain: 0.04, type: 'triangle' as const },  // A5
+      { freq: 987.77, time: 3.05, dur: 0.6, gain: 0.035, type: 'sine' as const },    // B5
+      { freq: 783.99, time: 3.45, dur: 0.45, gain: 0.035, type: 'triangle' as const }, // G5
+
+      // Bar 3 (A Minor)
+      { freq: 220.00, time: 4.0, dur: 1.8, gain: 0.025, type: 'sine' as const }, // Bass A3
+      { freq: 659.25, time: 4.0, dur: 0.5, gain: 0.04, type: 'triangle' as const },  // E5
+      { freq: 783.99, time: 4.35, dur: 0.5, gain: 0.04, type: 'triangle' as const }, // G5
+      { freq: 880.00, time: 4.7, dur: 0.6, gain: 0.04, type: 'triangle' as const },  // A5
+      { freq: 1046.5, time: 5.1, dur: 0.6, gain: 0.035, type: 'sine' as const },     // C6
+      { freq: 880.00, time: 5.5, dur: 0.45, gain: 0.035, type: 'triangle' as const }, // A5
+
+      // Bar 4 (F Major to G turn)
+      { freq: 174.61, time: 6.0, dur: 1.6, gain: 0.025, type: 'sine' as const }, // Bass F3
+      { freq: 698.46, time: 6.0, dur: 0.45, gain: 0.04, type: 'triangle' as const }, // F5
+      { freq: 659.25, time: 6.4, dur: 0.45, gain: 0.04, type: 'triangle' as const }, // E5
+      { freq: 587.33, time: 6.8, dur: 0.5, gain: 0.04, type: 'triangle' as const },  // D5
+      { freq: 523.25, time: 7.2, dur: 0.65, gain: 0.04, type: 'sine' as const },     // C5
+    ],
+    // Phrase 2: Gentle Harmony Response
+    [
+      // Bar 1 (C Major Variation)
+      { freq: 261.63, time: 0.0, dur: 1.8, gain: 0.025, type: 'sine' as const },
+      { freq: 1046.5, time: 0.0, dur: 0.5, gain: 0.035, type: 'sine' as const },
+      { freq: 880.00, time: 0.35, dur: 0.45, gain: 0.035, type: 'triangle' as const },
+      { freq: 783.99, time: 0.7, dur: 0.5, gain: 0.04, type: 'triangle' as const },
+      { freq: 659.25, time: 1.1, dur: 0.6, gain: 0.04, type: 'triangle' as const },
+
+      // Bar 2 (F Major)
+      { freq: 174.61, time: 2.0, dur: 1.8, gain: 0.025, type: 'sine' as const },
+      { freq: 698.46, time: 2.0, dur: 0.5, gain: 0.04, type: 'triangle' as const },
+      { freq: 783.99, time: 2.35, dur: 0.45, gain: 0.04, type: 'triangle' as const },
+      { freq: 880.00, time: 2.7, dur: 0.6, gain: 0.04, type: 'triangle' as const },
+      { freq: 1046.5, time: 3.1, dur: 0.65, gain: 0.035, type: 'sine' as const },
+
+      // Bar 3 (G Major)
+      { freq: 196.00, time: 4.0, dur: 1.8, gain: 0.025, type: 'sine' as const },
+      { freq: 987.77, time: 4.0, dur: 0.5, gain: 0.035, type: 'sine' as const },
+      { freq: 880.00, time: 4.4, dur: 0.45, gain: 0.04, type: 'triangle' as const },
+      { freq: 783.99, time: 4.8, dur: 0.5, gain: 0.04, type: 'triangle' as const },
+      { freq: 587.33, time: 5.2, dur: 0.6, gain: 0.04, type: 'triangle' as const },
+
+      // Bar 4 (C Rest & Resolve)
+      { freq: 261.63, time: 6.0, dur: 1.8, gain: 0.025, type: 'sine' as const },
+      { freq: 523.25, time: 6.0, dur: 0.5, gain: 0.04, type: 'triangle' as const },
+      { freq: 659.25, time: 6.45, dur: 0.5, gain: 0.04, type: 'triangle' as const },
+      { freq: 783.99, time: 6.9, dur: 0.8, gain: 0.04, type: 'sine' as const },
+    ]
   ];
 
-  phrase.forEach((n) => {
-    playMusicBoxNote(n.freq, n.time);
+  const currentPhrase = chordSequences[sectionIndex % chordSequences.length];
+  currentPhrase.forEach((n) => {
+    playMusicBoxNote(n.freq, n.time, n.dur, n.gain, n.type);
   });
 }
 
@@ -385,15 +447,17 @@ export const soundManager = {
     try {
       getAudioContext();
       isMusicPlaying = true;
-      playMusicBoxMelody();
+      let phraseStep = 0;
+      playMusicBoxMelody(phraseStep);
       if (bgMusicInterval) clearInterval(bgMusicInterval);
       bgMusicInterval = setInterval(() => {
         if (!isMusicPlaying || isSoundMuted) {
           this.stopMusic();
           return;
         }
-        playMusicBoxMelody();
-      }, 4500);
+        phraseStep += 1;
+        playMusicBoxMelody(phraseStep);
+      }, 8000);
     } catch {
       // Ignore
     }

@@ -38,6 +38,7 @@ import { EmotionState, StudentProfile } from '../../types/game';
 import { soundManager } from '../../utils/audio';
 import { gameDb } from '../../services/db';
 import { createSafeImageErrorHandler } from '../../utils/assets';
+import { StudentReflectionModal } from '../StudentReflectionModal';
 
 interface TamanPancasilaLevelProps {
   student?: StudentProfile | null;
@@ -183,6 +184,60 @@ const SCENARIOS = [
     ],
     hint: 'Kerja sama membuat pekerjaan berat menjadi terasa ringan dan cepat selesai.',
   },
+  {
+    id: 'sc-4',
+    title: 'Musyawarah Memilih Ketua Kelas',
+    context: 'Ibu guru meminta seluruh siswa kelas 2 memilih ketua kelas dengan cara bermusyawarah dan pemungutan suara.',
+    question: 'Sikap yang mencerminkan pengamalan Sila ke-4 Pancasila adalah:',
+    options: [
+      {
+        id: 'opt-a',
+        text: 'Menghargai pendapat teman dan menerima hasil keputusan musyawarah dengan lapang dada',
+        isCorrect: true,
+        feedback: 'Luar biasa! Musyawarah mufakat dan menghargai keputusan bersama adalah inti Sila ke-4!',
+      },
+      {
+        id: 'opt-b',
+        text: 'Memaksakan kehendak sendiri agar terpilih menjadi ketua kelas',
+        isCorrect: false,
+        feedback: 'Memaksakan kehendak bertentangan dengan semangat musyawarah.',
+      },
+      {
+        id: 'opt-c',
+        text: 'Marah dan mengabaikan teman yang berbeda pilihan',
+        isCorrect: false,
+        feedback: 'Perbedaan pilihan adalah hal wajar, persahabatan tetap nomor satu.',
+      },
+    ],
+    hint: 'Sila ke-4 dilambangkan kepala banteng yang mengajarkan musyawarah.',
+  },
+  {
+    id: 'sc-5',
+    title: 'Berdoa Bersama Sebelum Belajar',
+    context: 'Sebelum memulai pelajaran di kelas, setiap siswa berdoa menurut agama dan keyakinan masing-masing.',
+    question: 'Sikap toleransi dan kerukunan yang sesuai dengan Sila ke-1 adalah:',
+    options: [
+      {
+        id: 'opt-a',
+        text: 'Berdoa dengan khusyuk dan saling menghormati teman yang berbeda cara beribadah',
+        isCorrect: true,
+        feedback: 'Hebat! Saling menghormati perbedaan agama adalah wujud nyata Sila ke-1 (Ketuhanan Yang Maha Esa)!',
+      },
+      {
+        id: 'opt-b',
+        text: 'Mengganggu atau menertawakan teman yang sedang berdoa',
+        isCorrect: false,
+        feedback: 'Mengganggu teman yang berdoa melanggar kerukunan beragama.',
+      },
+      {
+        id: 'opt-c',
+        text: 'Berbicara keras-keras saat waktu doa berlangsung',
+        isCorrect: false,
+        feedback: 'Kita harus bersikap tenang dan menghormati waktu berdoa bersama.',
+      },
+    ],
+    hint: 'Sila ke-1 dilambangkan bintang emas yang mengajarkan toleransi beragama.',
+  },
 ];
 
 export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
@@ -194,6 +249,8 @@ export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
   // Game Steps: 'intro' -> 'match_symbols' -> 'scenarios' -> 'result'
   const [currentStep, setCurrentStep] = useState<'intro' | 'match_symbols' | 'scenarios' | 'result'>('intro');
   const [showEmblemGuide, setShowEmblemGuide] = useState(false);
+  const [showReflectionModal, setShowReflectionModal] = useState(false);
+  const [hasFilledReflection, setHasFilledReflection] = useState(false);
 
   // Anti-Cheat System Hook (deteksi pindah tab, printscreen, copy teks)
   const { violationCount, activeAlert, dismissAlert } = useAntiCheat({
@@ -331,10 +388,10 @@ export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
       setGuideEmotion('idle');
       setCustomGuideText(null);
     } else {
-      // Final calculation
+      // Final calculation (5 Simbol + 5 Soal Cerita)
       const perfectSymbolBonus = symbolAttempts <= 6 ? 1 : 0;
-      const calculatedStars = Math.max(1, Math.min(3, 1 + (scenarioCorrectCount >= 2 ? 1 : 0) + perfectSymbolBonus));
-      const calculatedScore = Math.round((matchedPairs.length * 10 + scenarioCorrectCount * 16.6) || 85);
+      const calculatedStars = Math.max(1, Math.min(3, 1 + (scenarioCorrectCount >= 3 ? 1 : 0) + (scenarioCorrectCount === 5 ? 1 : perfectSymbolBonus)));
+      const calculatedScore = Math.min(100, Math.round((matchedPairs.length * 10 + scenarioCorrectCount * 10)));
       const calculatedXP = 100 + calculatedStars * 30;
 
       setStars(calculatedStars);
@@ -920,8 +977,25 @@ export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
 
               <button
                 type="button"
-                onClick={onBackToMap}
-                className="w-full sm:w-auto px-8 py-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-black text-base shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95"
+                onClick={() => {
+                  soundManager.playClick();
+                  setShowReflectionModal(true);
+                }}
+                className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 text-white font-black text-sm shadow-md flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer"
+              >
+                <span>📝 Isi Refleksi Belajar untuk Guru ✨</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (!hasFilledReflection) {
+                    setShowReflectionModal(true);
+                  } else {
+                    onBackToMap();
+                  }
+                }}
+                className="w-full sm:w-auto px-8 py-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-black text-base shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer"
               >
                 <Compass className="w-5 h-5" />
                 <span>Kembali ke Peta Sekolah</span>
@@ -930,6 +1004,22 @@ export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
           </motion.div>
         )}
       </div>
+
+      {/* MODAL REFLEKSI PEMBELAJARAN UNTUK DASHBOARD GURU */}
+      <StudentReflectionModal
+        isOpen={showReflectionModal}
+        student={student}
+        studentName={student?.nickname || studentName}
+        levelId="taman-pancasila"
+        levelName="Misi 1: Taman Pancasila (PPKn)"
+        onClose={() => {
+          setShowReflectionModal(false);
+          setHasFilledReflection(true);
+        }}
+        onSubmitted={() => {
+          setHasFilledReflection(true);
+        }}
+      />
 
       {/* MODAL PANDUAN LAMBANG ASLI PERISAI GARUDA PANCASILA */}
       {showEmblemGuide && (

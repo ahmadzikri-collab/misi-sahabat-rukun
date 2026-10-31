@@ -8,10 +8,12 @@ import { useAntiCheat } from '../../hooks/useAntiCheat';
 import { AntiCheatWatermark } from '../anticheat/AntiCheatWatermark';
 import { AntiCheatModal } from '../anticheat/AntiCheatModal';
 import { AntiCheatBanner } from '../anticheat/AntiCheatBanner';
-import { getUcielForLocation } from '../../data/characters';
+import { getUcielForLocation, KANTIN_BG } from '../../data/characters';
 import { EmotionState, StudentProfile } from '../../types/game';
 import { soundManager } from '../../utils/audio';
 import { gameDb } from '../../services/db';
+import { createSafeImageErrorHandler } from '../../utils/assets';
+import { StudentReflectionModal } from '../StudentReflectionModal';
 
 interface KantinPintarLevelProps {
   student?: StudentProfile | null;
@@ -57,6 +59,30 @@ const MATH_CHALLENGES = [
     ],
     hint: 'Kembalikan barang atau uang yang bukan milik kita dengan jujur.',
   },
+  {
+    id: 'kantin-4',
+    situation: 'Dayu memiliki 24 potong buah semangka segar. Dayu membagikannya sama rata kepada 4 meja kelompok sahabatnya.',
+    question: 'Berapa potong buah semangka yang didapatkan setiap meja kelompok?',
+    calculationNote: '24 : 4 = ...',
+    options: [
+      { id: 'opt-1', text: '6 potong semangka tiap meja', isCorrect: true, feedback: 'Pintar sekali! 24 dibagi 4 adalah 6 potong semangka yang adil dan merata!' },
+      { id: 'opt-2', text: '5 potong semangka', isCorrect: false, feedback: 'Hitung kembali: 4 dikali 6 adalah 24.' },
+      { id: 'opt-3', text: '8 potong semangka', isCorrect: false, feedback: 'Kalau 8, 4 x 8 = 32 potong, melebihi semangka yang ada.' },
+    ],
+    hint: 'Membagi adil sama rata membuat semua teman tersenyum bahagia.',
+  },
+  {
+    id: 'kantin-5',
+    situation: 'Saat jam istirahat kantin sangat ramai. Antrean di depan etalase makanan cukup panjang.',
+    question: 'Bagaimana sikap tertib antre anak yang rukun di kantin sekolah?',
+    calculationNote: 'Tertib Mengantre di Kantin',
+    options: [
+      { id: 'opt-1', text: 'Berdiri rapi mengantre sesuai urutan kedatangan tanpa menyerobot teman', isCorrect: true, feedback: 'Hebat! Antre dengan tertib mencerminkan budaya disiplin dan menghormati hak teman!' },
+      { id: 'opt-2', text: 'Menyerobot dari samping karena merasa lapar sekali', isCorrect: false, feedback: 'Menyerobot antrean merugikan teman yang sudah datang lebih dahulu.' },
+      { id: 'opt-3', text: 'Mendorong teman di depan agar cepat maju', isCorrect: false, feedback: 'Mendorong teman bisa membuat makanan tumpah dan berbahaya.' },
+    ],
+    hint: 'Budaya antre yang tertib adalah tanda anak yang disiplin dan rukun.',
+  },
 ];
 
 export const KantinPintarLevel: React.FC<KantinPintarLevelProps> = ({
@@ -86,6 +112,8 @@ export const KantinPintarLevel: React.FC<KantinPintarLevelProps> = ({
   const [stars, setStars] = useState(3);
   const [totalScore, setTotalScore] = useState(100);
   const [earnedXP, setEarnedXP] = useState(150);
+  const [showReflectionModal, setShowReflectionModal] = useState(false);
+  const [hasFilledReflection, setHasFilledReflection] = useState(false);
 
   const uciel = getUcielForLocation('kantin-pintar');
   const currentChallenge = MATH_CHALLENGES[challengeIdx];
@@ -155,13 +183,22 @@ export const KantinPintarLevel: React.FC<KantinPintarLevelProps> = ({
 
   return (
     <div className="relative min-h-screen bg-slate-100 flex flex-col">
-      {/* Header Banner */}
-      <div className="relative h-44 sm:h-56 w-full overflow-hidden bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 shadow-md">
+      {/* Header Banner with Canteen Visual Illustration */}
+      <div className="relative h-44 sm:h-64 w-full overflow-hidden shadow-md">
+        <img
+          src={KANTIN_BG}
+          alt="Kantin Pintar"
+          referrerPolicy="no-referrer"
+          onError={createSafeImageErrorHandler('taman')}
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/85 via-slate-900/35 to-transparent" />
+
         <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
           <button
             type="button"
             onClick={onBackToMap}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/90 hover:bg-white text-gray-800 text-xs sm:text-sm font-black shadow-md backdrop-blur-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/90 hover:bg-white text-gray-800 text-xs sm:text-sm font-black shadow-md backdrop-blur-sm transition-transform active:scale-95"
           >
             <Compass className="w-4 h-4 text-emerald-600" />
             <span>Peta Sekolah</span>
@@ -174,7 +211,7 @@ export const KantinPintarLevel: React.FC<KantinPintarLevelProps> = ({
         </div>
 
         <div className="absolute bottom-3 left-4 right-4 text-white">
-          <span className="px-2 py-0.5 rounded-md bg-emerald-500 font-bold text-[11px] uppercase tracking-wider text-white">
+          <span className="px-2 py-0.5 rounded-md bg-emerald-600 font-bold text-[11px] uppercase tracking-wider text-white">
             Tema 1: Hidup Rukun • Berhitung & Kejujuran
           </span>
           <h1 className="text-xl sm:text-3xl font-black drop-shadow-md flex items-center gap-2 mt-1">
@@ -414,19 +451,51 @@ export const KantinPintarLevel: React.FC<KantinPintarLevelProps> = ({
               </div>
             </div>
 
-            <div className="pt-2">
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
               <button
                 type="button"
-                onClick={onBackToMap}
-                className="px-8 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-base shadow-lg"
+                onClick={() => {
+                  soundManager.playClick();
+                  setShowReflectionModal(true);
+                }}
+                className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 text-white font-black text-sm shadow-md flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer"
               >
-                Kembali ke Peta Sekolah
+                <span>📝 Isi Refleksi Belajar untuk Guru ✨</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (!hasFilledReflection) {
+                    setShowReflectionModal(true);
+                  } else {
+                    onBackToMap();
+                  }
+                }}
+                className="w-full sm:w-auto px-8 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-base shadow-lg flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer"
+              >
+                <span>Kembali ke Peta Sekolah</span>
               </button>
             </div>
           </motion.div>
         )}
       </div>
 
+      {/* MODAL REFLEKSI PEMBELAJARAN UNTUK DASHBOARD GURU */}
+      <StudentReflectionModal
+        isOpen={showReflectionModal}
+        student={student}
+        studentName={student?.nickname || studentName}
+        levelId="kantin-pintar"
+        levelName="Misi 3: Kantin Pintar (Matematika)"
+        onClose={() => {
+          setShowReflectionModal(false);
+          setHasFilledReflection(true);
+        }}
+        onSubmitted={() => {
+          setHasFilledReflection(true);
+        }}
+      />
     </div>
   );
 };
