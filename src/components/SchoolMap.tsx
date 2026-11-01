@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Star, Lock, Play, Sparkles, BookOpen, Utensils, Palette, Trophy, Award, Info, LogOut } from 'lucide-react';
+import { Star, Lock, Play, Sparkles, BookOpen, Utensils, Palette, Trophy, Award, Info, LogOut, Volume2 } from 'lucide-react';
 import { SCHOOL_MAP_BG, UCIEL_AVATAR } from '../data/characters';
 import { createSafeImageErrorHandler } from '../utils/assets';
 import { LevelProgress, StudentProfile } from '../types/game';
@@ -185,6 +185,18 @@ export const SchoolMap: React.FC<SchoolMapProps> = ({
                 <span>Peringkat</span>
               </button>
             )}
+
+            <button
+              type="button"
+              onClick={() => {
+                soundManager.playUserVoice();
+              }}
+              className="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 text-white font-black text-xs flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform cursor-pointer"
+              title="Dengarkan Rekaman Suara Asli Pemandu Uciel"
+            >
+              <Volume2 className="w-3.5 h-3.5 text-white" />
+              <span>🎙️ Suara Pemandu</span>
+            </button>
 
             <button
               type="button"

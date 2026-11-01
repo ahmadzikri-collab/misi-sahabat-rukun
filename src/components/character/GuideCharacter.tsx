@@ -70,7 +70,7 @@ export const GuideCharacter: React.FC<GuideCharacterProps> = ({
     } else {
       setIsSpeakingTts(true);
       setCurrentEmotion('talking');
-      soundManager.speak(displayedText, () => {
+      soundManager.speakGuide(displayedText, () => {
         setIsSpeakingTts(false);
         setCurrentEmotion('idle');
       });
@@ -88,10 +88,10 @@ export const GuideCharacter: React.FC<GuideCharacterProps> = ({
     setTapCount((prev) => prev + 1);
     setCurrentEmotion('happy');
 
-    // Auto read aloud if TTS is on
-    if (soundManager.isTtsActive) {
+    // Auto read aloud if sound is enabled
+    if (soundManager.isTtsActive || soundManager.isUserVoiceActive) {
       setIsSpeakingTts(true);
-      soundManager.speak(greeting, () => {
+      soundManager.speakGuide(greeting, () => {
         setIsSpeakingTts(false);
         setCurrentEmotion('idle');
       });
@@ -224,34 +224,40 @@ export const GuideCharacter: React.FC<GuideCharacterProps> = ({
             {/* Triangular speech bubble arrow pointing to avatar */}
             <div className="hidden sm:block absolute -left-3 top-7 w-0 h-0 border-t-8 border-t-transparent border-r-12 border-r-white border-b-8 border-b-transparent drop-shadow-[-2px_0_1px_rgba(0,0,0,0.04)]" />
 
-            {/* Speaker name */}
-            <div className="flex items-center justify-between mb-1">
-              <span
-                className="text-sm sm:text-base font-black flex items-center gap-1.5"
-                style={{ color: guide.themeColor.primary }}
-              >
-                <MessageCircle className="w-4 h-4" />
-                {guide.nickname}:
-              </span>
+            {/* Speaker name & Voice Controls */}
+            <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1.5">
+              <div className="flex items-center gap-2">
+                <span
+                  className="text-sm sm:text-base font-black flex items-center gap-1.5"
+                  style={{ color: guide.themeColor.primary }}
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  {guide.nickname}:
+                </span>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                  <span>🎙️</span>
+                  <span>Suara Pemandu Rekaman Asli</span>
+                </span>
+              </div>
 
-              {/* TTS Audio Speak Button */}
+              {/* Recorded Audio Speak Button */}
               <button
                 type="button"
                 onClick={handleReadAloud}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
                   isSpeakingTts
-                    ? 'bg-amber-500 text-white animate-bounce shadow-md'
-                    : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200'
+                    ? 'bg-amber-500 text-white animate-bounce shadow-md ring-2 ring-amber-300'
+                    : 'bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-950 border border-amber-300 shadow-xs'
                 }`}
-                title="Dengarkan suara karakter dibaca nyaring"
+                title="Dengarkan rekaman suara pemandu asli"
               >
                 {isSpeakingTts ? (
                   <>
-                    <VolumeX className="w-3.5 h-3.5" /> Stop
+                    <VolumeX className="w-3.5 h-3.5 text-white" /> Stop Suara
                   </>
                 ) : (
                   <>
-                    <Volume2 className="w-3.5 h-3.5" /> Dengar Suara
+                    <Volume2 className="w-3.5 h-3.5 text-amber-800" /> 🎙️ Putar Suara Asli
                   </>
                 )}
               </button>

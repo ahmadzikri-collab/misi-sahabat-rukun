@@ -54,7 +54,7 @@ export const UCIEL_GARUDA: CharacterGuide = {
       speaker: 'Uciel',
       emotion: 'happy',
       soundCue: 'pop',
-      text: 'Kweeek! Halo Sahabat Rukun! Aku Uciel, burung garuda cilik yang ceria dan suka berteman!',
+      text: '🎙️ "Gunakan suara saya untuk pemandu game ini. Apakah bisa digunakan?" — Tentu saja! Suara rekaman asli berhasil diaktifkan untuk memandu petualanganmu!',
     },
     {
       id: 'uciel-w2',
@@ -72,6 +72,7 @@ export const UCIEL_GARUDA: CharacterGuide = {
     },
   ],
   tapGreetings: [
+    '🎙️ "Gunakan suara saya untuk pemandu game ini. Apakah bisa digunakan?" — Siap, suara pemandu aktif memandumu!',
     'Kweeek! Senang sekali bisa terbang dan bermain bersamamu!',
     'Garuda Pancasila adalah lambang negara kita. Ayo jaga kerukunan di sekolah!',
     'Kalau kamu butuh bantuan, ketuk tombol lampu petunjuk ya, Uciel siap membantumu!',
