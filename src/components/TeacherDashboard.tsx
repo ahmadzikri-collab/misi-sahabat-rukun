@@ -144,6 +144,8 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
   const [reflectionLevelFilter, setReflectionLevelFilter] = useState('all');
   const [feedbackInputs, setFeedbackInputs] = useState<Record<string, string>>({});
   const [feedbackSuccessId, setFeedbackSuccessId] = useState<string | null>(null);
+  const [confirmDeleteReflectionId, setConfirmDeleteReflectionId] = useState<string | null>(null);
+  const [reflectionDeletedNotice, setReflectionDeletedNotice] = useState<string | null>(null);
   const [targetStudentId, setTargetStudentId] = useState<string>('all');
   const [customEncouragementText, setCustomEncouragementText] = useState<string>('');
   const [selectedEmoji, setSelectedEmoji] = useState<string>('⭐');
@@ -670,8 +672,12 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
     soundManager.playSuccess();
   };
 
-  const handleDeleteReflection = async (reflectionId: string) => {
-    if (!window.confirm('Hapus kartu refleksi ini?')) return;
+  const handleDeleteReflection = (reflectionId: string) => {
+    soundManager.playClick();
+    setConfirmDeleteReflectionId(reflectionId);
+  };
+
+  const handleExecuteDeleteReflection = async (reflectionId: string) => {
     soundManager.playClick();
     gameDb.deleteStudentReflection(reflectionId);
     try {
@@ -680,6 +686,17 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
       console.warn('Could not delete reflection from Cloud Firestore:', err);
     }
     setReflections((prev) => prev.filter((r) => r.id !== reflectionId));
+    setConfirmDeleteReflectionId(null);
+    setReflectionDeletedNotice('Kartu refleksi siswa berhasil dihapus.');
+    soundManager.playSuccess();
+    setTimeout(() => {
+      setReflectionDeletedNotice(null);
+    }, 3000);
+  };
+
+  const handleCancelDeleteReflection = () => {
+    soundManager.playClick();
+    setConfirmDeleteReflectionId(null);
   };
 
   const handleDownloadReflectionsCSV = () => {
@@ -1989,6 +2006,14 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
               </div>
             </div>
 
+            {/* Notification saat refleksi dihapus */}
+            {reflectionDeletedNotice && (
+              <div className="p-3 rounded-2xl bg-rose-950/70 border border-rose-500/50 text-rose-300 text-xs font-bold flex items-center gap-2 animate-fade-in">
+                <Check className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>{reflectionDeletedNotice}</span>
+              </div>
+            )}
+
             {/* Reflection Cards Feed */}
             {filteredReflections.length === 0 ? (
               <div className="p-12 text-center rounded-3xl bg-slate-800/40 border border-slate-700 space-y-3">
@@ -1998,7 +2023,7 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                 <h3 className="text-lg font-black text-white">Belum Ada Lembar Refleksi Siswa</h3>
                 <p className="text-xs text-slate-400 max-w-md mx-auto">
                   {reflections.length === 0
-                    ? 'Setelah siswa menyelesaikan salah satu level misi, modal refleksi 4 pertanyaan akan muncul otomatis dan jawaban siswa akan langsung tersimpan di sini secara realtime!'
+                    ? 'Setelah siswa menyelesaikan seluruh 5 misi, lembar refleksi 4 pertanyaan dapat dikirim siswa dan jawaban siswa akan langsung tersimpan di sini secara realtime!'
                     : 'Tidak ada refleksi yang cocok dengan filter pencarian.'}
                 </p>
               </div>
@@ -2045,14 +2070,34 @@ export const TeacherDashboard: React.FC<TeacherDashboardProps> = ({
                             {dateStr}
                           </span>
 
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteReflection(refl.id)}
-                            className="p-1.5 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-slate-700/60 transition-colors"
-                            title="Hapus kartu refleksi ini"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {confirmDeleteReflectionId === refl.id ? (
+                            <div className="flex items-center gap-1.5 bg-rose-950/90 border border-rose-500/50 px-2.5 py-1 rounded-xl text-xs shadow-lg animate-fade-in">
+                              <span className="text-[11px] text-rose-200 font-bold">Hapus?</span>
+                              <button
+                                type="button"
+                                onClick={() => handleExecuteDeleteReflection(refl.id)}
+                                className="px-2 py-0.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-black text-[10px] cursor-pointer active:scale-95 transition-transform"
+                              >
+                                Ya, Hapus
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleCancelDeleteReflection}
+                                className="px-2 py-0.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-[10px] cursor-pointer"
+                              >
+                                Batal
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteReflection(refl.id)}
+                              className="p-1.5 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/30 transition-colors cursor-pointer"
+                              title="Hapus kartu refleksi ini"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </div>
 

@@ -4,12 +4,6 @@
  * Includes High-Power Volume Booster (2.5x gain) and Cute Uciel Mascot Speech.
  */
 
-import { resolveAssetUrl } from './assets';
-
-export const USER_GUIDE_VOICE_URL = resolveAssetUrl('audio/uciel_guide_voice.mp3');
-let userVoiceAudio: HTMLAudioElement | null = null;
-let useRecordedGuideVoice = true;
-
 let audioCtx: AudioContext | null = null;
 let masterGainNode: GainNode | null = null;
 let bgMusicInterval: ReturnType<typeof setInterval> | null = null;
@@ -643,88 +637,14 @@ export const soundManager = {
     this.speak(fullText, key, onEnd);
   },
 
-  get isUserVoiceActive(): boolean {
-    return useRecordedGuideVoice;
-  },
-
-  setUserVoiceActive(enabled: boolean) {
-    useRecordedGuideVoice = enabled;
-  },
-
-  toggleUserVoice(): boolean {
-    useRecordedGuideVoice = !useRecordedGuideVoice;
-    return useRecordedGuideVoice;
-  },
-
   /**
-   * Memutar suara pemandu asli dari rekaman MP3 yang dikirimkan oleh pengguna
-   */
-  playUserVoice(onEnd?: () => void): boolean {
-    if (isSoundMuted || typeof window === 'undefined') {
-      if (onEnd) onEnd();
-      return false;
-    }
-
-    try {
-      this.stopSpeaking();
-
-      if (!userVoiceAudio) {
-        userVoiceAudio = new Audio(USER_GUIDE_VOICE_URL);
-      }
-      userVoiceAudio.currentTime = 0;
-      userVoiceAudio.volume = 1.0;
-      notifySpeechListeners('user-guide-voice');
-
-      userVoiceAudio.onended = () => {
-        notifySpeechListeners(null);
-        if (onEnd) onEnd();
-      };
-
-      userVoiceAudio.onerror = (err) => {
-        console.warn('Recorded guide voice playback error, falling back to synthesis:', err);
-        notifySpeechListeners(null);
-        if (onEnd) onEnd();
-      };
-
-      const playPromise = userVoiceAudio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((err) => {
-          console.warn('Playback prevented by browser policy:', err);
-          notifySpeechListeners(null);
-          if (onEnd) onEnd();
-        });
-      }
-      return true;
-    } catch (err) {
-      console.warn('playUserVoice exception:', err);
-      notifySpeechListeners(null);
-      if (onEnd) onEnd();
-      return false;
-    }
-  },
-
-  /**
-   * Suara Pemandu: Memutar suara rekaman pengguna jika aktif, atau fallback ke TTS sintesis
+   * Suara Pemandu Maskot Uciel: Membaca teks narasi dengan sintesis Web Speech ramah anak
    */
   speakGuide(text: string, onEnd?: () => void) {
-    if (useRecordedGuideVoice) {
-      // Putar suara rekaman asli pemandu yang dikirim oleh pengguna!
-      const played = this.playUserVoice(onEnd);
-      if (played) return;
-    }
-    // Fallback ke TTS sintesis jika rekaman dinonaktifkan
     this.speak(text, onEnd);
   },
 
   stopSpeaking() {
-    if (userVoiceAudio) {
-      try {
-        userVoiceAudio.pause();
-        userVoiceAudio.currentTime = 0;
-      } catch {
-        // ignore
-      }
-    }
     if ('speechSynthesis' in window) {
       try {
         window.speechSynthesis.cancel();

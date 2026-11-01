@@ -6,6 +6,7 @@ import { createSafeImageErrorHandler } from '../utils/assets';
 import { LevelProgress, StudentProfile } from '../types/game';
 import { soundManager } from '../utils/audio';
 import { gameDb } from '../services/db';
+import { StudentReflectionModal } from './StudentReflectionModal';
 
 interface SchoolMapProps {
   currentStudent: StudentProfile;
@@ -109,6 +110,23 @@ export const SchoolMap: React.FC<SchoolMapProps> = ({
   onOpenLeaderboard,
 }) => {
   const [selectedLocation, setSelectedLocation] = useState<MapLocationDef | null>(MAP_LOCATIONS[0]);
+  const [isReflectionModalOpen, setIsReflectionModalOpen] = useState(false);
+
+  // Periksa apakah siswa telah menyelesaikan seluruh 5 misi tematik
+  const REQUIRED_MISSION_IDS = [
+    'taman-pancasila',
+    'perpustakaan-ceria',
+    'kantin-pintar',
+    'studio-kreatif',
+    'lapangan-persahabatan',
+  ];
+
+  const completedMissionsCount = REQUIRED_MISSION_IDS.filter((id) => {
+    const p = levelProgress[id];
+    return p && (p.status === 'completed' || (p.starsEarned !== undefined && p.starsEarned > 0));
+  }).length;
+
+  const isAllFiveMissionsCompleted = completedMissionsCount >= 5;
 
   // Reactive unlock mapping
   const currentUnlocks = levelUnlocks || gameDb.getLevelUnlockSettings();
@@ -186,17 +204,29 @@ export const SchoolMap: React.FC<SchoolMapProps> = ({
               </button>
             )}
 
-            <button
-              type="button"
-              onClick={() => {
-                soundManager.playUserVoice();
-              }}
-              className="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 text-white font-black text-xs flex items-center gap-1.5 shadow-sm active:scale-95 transition-transform cursor-pointer"
-              title="Dengarkan Rekaman Suara Asli Pemandu Uciel"
-            >
-              <Volume2 className="w-3.5 h-3.5 text-white" />
-              <span>🎙️ Suara Pemandu</span>
-            </button>
+            {/* Tombol Refleksi Guru: Hanya Muncul/Aktif apabila 5 Misi Selesai */}
+            {isAllFiveMissionsCompleted ? (
+              <button
+                type="button"
+                onClick={() => {
+                  soundManager.playClick();
+                  setIsReflectionModalOpen(true);
+                }}
+                className="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 hover:brightness-110 text-white font-black text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-all cursor-pointer ring-2 ring-emerald-400 animate-pulse"
+                title="Kirim Lembar Refleksi Akhir ke Dashboard Guru (5 Misi Tuntas!)"
+              >
+                <span>📝 Refleksi Guru (5/5)</span>
+              </button>
+            ) : (
+              <div
+                className="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-400 text-xs font-bold flex items-center gap-1.5"
+                title={`Selesaikan 5 misi untuk membuka Refleksi Guru (Selesai: ${completedMissionsCount}/5)`}
+              >
+                <Lock className="w-3 h-3 text-amber-400" />
+                <span className="hidden sm:inline">Refleksi Guru:</span>
+                <span className="text-amber-400 font-black">{completedMissionsCount}/5</span>
+              </div>
+            )}
 
             <button
               type="button"
@@ -210,6 +240,40 @@ export const SchoolMap: React.FC<SchoolMapProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Banner Khusus: 5 Misi Tuntas - Ajakan Mengisi Refleksi */}
+      {isAllFiveMissionsCompleted && (
+        <div className="w-full max-w-5xl mx-auto px-2 sm:px-6 pt-3 pb-1">
+          <div className="p-3.5 sm:p-4 rounded-3xl bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 text-slate-950 shadow-xl border-3 border-yellow-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl sm:text-4xl">🏆</span>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="font-black text-sm sm:text-base text-slate-950">
+                    Luar Biasa, {currentStudent.displayName}! Seluruh 5 Misi Selesai! 🎉
+                  </h4>
+                  <span className="px-2 py-0.5 rounded-full bg-slate-950 text-amber-300 text-[10px] font-black">
+                    5 / 5 Misi Tuntas
+                  </span>
+                </div>
+                <p className="text-xs text-slate-800 font-bold mt-0.5">
+                  Lembar Refleksi Belajar kini telah terbuka! Yuk bagikan pendapat dan jawabanmu langsung ke Dashboard Guru!
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                soundManager.playClick();
+                setIsReflectionModalOpen(true);
+              }}
+              className="px-4 py-2 rounded-xl bg-slate-950 hover:bg-slate-900 text-amber-300 font-black text-xs sm:text-sm shadow-md transition-transform active:scale-95 cursor-pointer whitespace-nowrap flex items-center gap-1.5 shrink-0"
+            >
+              <span>📝 Isi Lembar Refleksi Guru ✨</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Interactive Map Visual Area */}
       <div className="relative w-full flex items-center justify-center p-2 sm:p-6 overflow-hidden">
@@ -471,6 +535,16 @@ export const SchoolMap: React.FC<SchoolMapProps> = ({
           })}
         </div>
       </div>
+
+      {/* Modal Refleksi 5 Misi Tematik untuk Dashboard Guru */}
+      <StudentReflectionModal
+        isOpen={isReflectionModalOpen}
+        student={currentStudent}
+        studentName={currentStudent.nickname || currentStudent.displayName}
+        levelId="5-misi-selesai"
+        levelName="Tuntas 5 Misi Sahabat Rukun (Tema 1)"
+        onClose={() => setIsReflectionModalOpen(false)}
+      />
     </div>
   );
 };

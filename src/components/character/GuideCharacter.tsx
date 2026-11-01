@@ -89,7 +89,7 @@ export const GuideCharacter: React.FC<GuideCharacterProps> = ({
     setCurrentEmotion('happy');
 
     // Auto read aloud if sound is enabled
-    if (soundManager.isTtsActive || soundManager.isUserVoiceActive) {
+    if (soundManager.isTtsActive) {
       setIsSpeakingTts(true);
       soundManager.speakGuide(greeting, () => {
         setIsSpeakingTts(false);
@@ -234,13 +234,9 @@ export const GuideCharacter: React.FC<GuideCharacterProps> = ({
                   <MessageCircle className="w-4 h-4" />
                   {guide.nickname}:
                 </span>
-                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
-                  <span>🎙️</span>
-                  <span>Suara Pemandu Rekaman Asli</span>
-                </span>
               </div>
 
-              {/* Recorded Audio Speak Button */}
+              {/* Uciel Voice Speak Button */}
               <button
                 type="button"
                 onClick={handleReadAloud}
@@ -249,7 +245,7 @@ export const GuideCharacter: React.FC<GuideCharacterProps> = ({
                     ? 'bg-amber-500 text-white animate-bounce shadow-md ring-2 ring-amber-300'
                     : 'bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-300 text-amber-950 border border-amber-300 shadow-xs'
                 }`}
-                title="Dengarkan rekaman suara pemandu asli"
+                title="Dengarkan suara ramah Uciel"
               >
                 {isSpeakingTts ? (
                   <>
@@ -257,7 +253,7 @@ export const GuideCharacter: React.FC<GuideCharacterProps> = ({
                   </>
                 ) : (
                   <>
-                    <Volume2 className="w-3.5 h-3.5 text-amber-800" /> 🎙️ Putar Suara Asli
+                    <Volume2 className="w-3.5 h-3.5 text-amber-800" /> 🗣️ Dengarkan Suara
                   </>
                 )}
               </button>

@@ -104,10 +104,10 @@ export const GuideDocModal: React.FC<GuideDocModalProps> = ({ isOpen, onClose })
             <div className="space-y-1">
               <h3 className="font-black text-emerald-950 text-base flex items-center gap-1.5">
                 <Volume2 className="w-4 h-4 text-emerald-600" />
-                <span>Suara Rekaman Asli Pemandu & Narasi Soal</span>
+                <span>Bantuan Suara Ramah Uciel & Narasi Soal</span>
               </h3>
               <p className="text-xs sm:text-sm text-emerald-900 font-medium">
-                Pemandu game kini menggunakan <strong>🎙️ Rekaman Suara Asli</strong>! Kamu bisa menekan tombol <strong>🎙️ Putar Suara Asli</strong> atau ketuk karakter <strong>Uciel si Garuda Cilik</strong> untuk mendengarkan arahan langsung.
+                Pemandu game <strong>Uciel si Garuda Cilik</strong> dilengkapi suara ramah anak! Kamu bisa menekan tombol <strong>🗣️ Dengarkan Suara</strong> atau ketuk karakter Uciel untuk mendengarkan arahan dan membaca soal dengan jelas.
               </p>
             </div>
           </div>

@@ -448,25 +448,30 @@ export const PerpustakaanCeriaLevel: React.FC<PerpustakaanCeriaLevelProps> = ({
             </div>
 
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  soundManager.playClick();
-                  setShowReflectionModal(true);
-                }}
-                className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 text-white font-black text-sm shadow-md flex items-center justify-center gap-2 cursor-pointer transition-transform active:scale-95"
-              >
-                <span>📝 Isi Refleksi Belajar untuk Guru ✨</span>
-              </button>
+              {/* Tombol Refleksi: Hanya tampil/aktif jika siswa telah menyelesaikan seluruh 5 misi */}
+              {student && gameDb.hasCompletedAllMissions(student.id) ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    soundManager.playClick();
+                    setShowReflectionModal(true);
+                  }}
+                  className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 text-white font-black text-sm shadow-md flex items-center justify-center gap-2 cursor-pointer transition-transform active:scale-95 ring-2 ring-emerald-300 animate-pulse"
+                >
+                  <span>📝 Isi Refleksi Belajar untuk Guru (5 Misi Tuntas) ✨</span>
+                </button>
+              ) : (
+                <div className="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900 text-xs font-bold flex items-center justify-center gap-1.5">
+                  <span>🔒</span>
+                  <span>Refleksi Guru terbuka setelah 5 misi tuntas ({student ? gameDb.getCompletedMissionsCount(student.id) : 1}/5)</span>
+                </div>
+              )}
 
               <button
                 type="button"
                 onClick={() => {
-                  if (!hasFilledReflection) {
-                    setShowReflectionModal(true);
-                  } else {
-                    onBackToMap();
-                  }
+                  soundManager.playClick();
+                  onBackToMap();
                 }}
                 className="w-full sm:w-auto px-8 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-base shadow-lg cursor-pointer transition-transform active:scale-95 flex items-center justify-center gap-2"
               >

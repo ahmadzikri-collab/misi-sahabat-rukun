@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles, Send, CheckCircle2, Heart, MessageSquare, Volume2, HelpCircle, ArrowRight, Star } from 'lucide-react';
+import { Sparkles, Send, CheckCircle2, Heart, MessageSquare, Volume2, HelpCircle, ArrowRight, Star, Lock } from 'lucide-react';
 import { soundManager } from '../utils/audio';
 import { gameDb } from '../services/db';
 import { StudentProfile, StudentReflection, ReflectionAnswer } from '../types/game';
@@ -105,6 +105,10 @@ export const StudentReflectionModal: React.FC<StudentReflectionModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
+  // Refleksi HANYA dapat dikirimkan apabila siswa telah menyelesaikan 5 misi
+  const completedMissionsCount = student ? gameDb.getCompletedMissionsCount(student.id) : 0;
+  const isEligible = completedMissionsCount >= 5;
+
   if (!isOpen) return null;
 
   const handleSelectOption = (qId: string, text: string) => {
@@ -123,6 +127,11 @@ export const StudentReflectionModal: React.FC<StudentReflectionModalProps> = ({
   };
 
   const handleSubmit = () => {
+    if (!isEligible) {
+      soundManager.playWarning();
+      return;
+    }
+
     soundManager.playSuccess();
     setIsSubmitting(true);
 
@@ -194,8 +203,48 @@ export const StudentReflectionModal: React.FC<StudentReflectionModalProps> = ({
         {/* Isi Form Refleksi */}
         {!isSuccess ? (
           <div className="p-4 sm:p-6 overflow-y-auto space-y-5 text-gray-800 flex-1">
+            {/* Status Prasyarat 5 Misi */}
+            {isEligible ? (
+              <div className="p-3.5 rounded-2xl bg-emerald-50 border-2 border-emerald-300 flex items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-2xl">🏆</span>
+                  <div>
+                    <div className="text-xs font-black text-emerald-950 flex items-center gap-1.5">
+                      <span>Syarat Terpenuhi: Seluruh 5 Misi Tuntas!</span>
+                      <span className="px-1.5 py-0.5 rounded-md bg-emerald-600 text-white text-[10px] font-black">5/5 Selesai</span>
+                    </div>
+                    <p className="text-[11px] text-emerald-800 font-semibold mt-0.5">
+                      Refleksi belajarmu siap dikirim langsung ke Dashboard Guru.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 rounded-2xl bg-amber-50 border-2 border-amber-400 space-y-2 shadow-xs">
+                <div className="flex items-center gap-2 text-amber-950 font-black text-sm">
+                  <Lock className="w-5 h-5 text-amber-600 shrink-0" />
+                  <span>Refleksi Terkunci: Harus Menyelesaikan 5 Misi</span>
+                </div>
+                <p className="text-xs text-amber-900 leading-relaxed font-semibold">
+                  Siswa hebat, kamu saat ini telah menyelesaikan <strong>{completedMissionsCount} dari 5 Misi</strong>. Refleksi ini hanya dapat dikirimkan ke Guru apabila kamu telah menyelesaikan seluruh 5 misi petualangan (Taman Pancasila, Perpustakaan, Kantin, Studio Kreatif, dan Lapangan).
+                </p>
+                <div className="space-y-1 pt-1">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-amber-950">
+                    <span>Kemajuan Misi Petualangan:</span>
+                    <span className="font-black text-amber-900">{completedMissionsCount} / 5 Selesai</span>
+                  </div>
+                  <div className="w-full bg-amber-200 rounded-full h-2.5 overflow-hidden">
+                    <div
+                      className="bg-amber-600 h-2.5 rounded-full transition-all duration-500"
+                      style={{ width: `${(completedMissionsCount / 5) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Kartu Sapaan Uciel */}
-            <div className="p-3.5 rounded-2xl bg-amber-50 border-2 border-amber-200 flex items-center gap-3">
+            <div className="p-3.5 rounded-2xl bg-amber-50/80 border-2 border-amber-200 flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-white shadow-xs flex-shrink-0 bg-amber-100">
                 <img
                   src={UCIEL_AVATAR}
@@ -207,7 +256,9 @@ export const StudentReflectionModal: React.FC<StudentReflectionModalProps> = ({
               <div>
                 <span className="text-[11px] font-black text-amber-800 uppercase block">Pesan Sahabat Uciel:</span>
                 <p className="text-xs sm:text-sm font-bold text-amber-950">
-                  "Kweeek! Hebat sekali, {studentName}! Jawaban refleksimu akan langsung terkirim ke <strong>Dashboard Guru</strong> agar Bapak/Ibu Guru bangga padamu!"
+                  {isEligible
+                    ? `"Kweeek! Hebat sekali, ${studentName}! Karena kamu sudah menyelesaikan 5 misi, jawaban refleksimu dapat langsung terkirim ke Dashboard Guru!"`
+                    : `"Semangat, ${studentName}! Tuntaskan kelima misi di peta ya. Setelah 5 misi tuntas, lembar refleksi ini akan terbuka untuk dikirim!"`}
                 </p>
               </div>
             </div>
@@ -349,11 +400,25 @@ export const StudentReflectionModal: React.FC<StudentReflectionModalProps> = ({
               <button
                 type="button"
                 onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-sm shadow-md flex items-center gap-2 active:scale-95 transition-all cursor-pointer disabled:opacity-60"
+                disabled={isSubmitting || !isEligible}
+                className={`px-6 py-2.5 rounded-xl font-black text-xs sm:text-sm shadow-md flex items-center gap-2 transition-all ${
+                  isEligible
+                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white active:scale-95 cursor-pointer'
+                    : 'bg-slate-300 text-slate-500 cursor-not-allowed border border-slate-300'
+                }`}
+                title={!isEligible ? `Harus menyelesaikan 5 misi (baru ${completedMissionsCount}/5)` : 'Kirim refleksi ke guru'}
               >
-                <Send className="w-4 h-4" />
-                <span>{isSubmitting ? 'Mengirim Refleksi...' : 'Kirim Refleksi ke Guru ✨'}</span>
+                {isEligible ? (
+                  <>
+                    <Send className="w-4 h-4" />
+                    <span>{isSubmitting ? 'Mengirim Refleksi...' : 'Kirim Refleksi ke Guru ✨'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-4 h-4 text-slate-500" />
+                    <span>Terkunci (Selesaikan 5 Misi: {completedMissionsCount}/5)</span>
+                  </>
+                )}
               </button>
             </>
           ) : (

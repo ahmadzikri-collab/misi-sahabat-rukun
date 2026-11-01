@@ -817,6 +817,31 @@ export const gameDb = {
     });
   },
 
+  // Periksa apakah siswa telah menyelesaikan seluruh 5 misi tematik
+  getCompletedMissionsCount(studentId: string): number {
+    const progress = this.getLevelProgress(studentId);
+    const requiredLevels = [
+      'taman-pancasila',
+      'perpustakaan-ceria',
+      'kantin-pintar',
+      'studio-kreatif',
+      'lapangan-persahabatan',
+    ];
+    return requiredLevels.filter((lvlId) => {
+      const p = progress[lvlId];
+      return p && (p.status === 'completed' || (p.starsEarned !== undefined && p.starsEarned > 0));
+    }).length;
+  },
+
+  hasCompletedAllMissions(studentId: string): boolean {
+    return this.getCompletedMissionsCount(studentId) >= 5;
+  },
+
+  hasStudentSubmittedReflection(studentId: string): boolean {
+    const reflections = this.getStudentReflections();
+    return reflections.some((r) => r.studentId === studentId);
+  },
+
   // Student Learning Reflections
   saveStudentReflection(reflection: StudentReflection): void {
     try {

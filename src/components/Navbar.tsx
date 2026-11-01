@@ -109,19 +109,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="hidden md:inline">{isMusicActive ? 'BGM' : 'BGM Off'}</span>
             </button>
 
-            {/* Tombol Rekaman Suara Asli Pemandu */}
-            <button
-              type="button"
-              onClick={() => {
-                soundManager.playUserVoice();
-              }}
-              className="px-2 py-1 rounded-lg text-[11px] font-black transition-all flex items-center gap-1 cursor-pointer bg-emerald-100 hover:bg-emerald-200 text-emerald-900 shadow-xs active:scale-95"
-              title="Putar Suara Rekaman Pemandu Asli"
-            >
-              <span>🎙️</span>
-              <span className="hidden lg:inline">Suara Pemandu</span>
-            </button>
-
             {/* Sound FX Toggle (Ikon tunggal) */}
             <button
               type="button"
