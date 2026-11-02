@@ -47,54 +47,54 @@ interface TamanPancasilaLevelProps {
   onBackToMap: () => void;
 }
 
-// Data Simbol & Sila Pancasila Sesuai Lambang Asli Perisai Garuda Pancasila
+// Data Simbol & Sila Pancasila Sesuai Kartu Lambang Garuda Pancasila
 const PANCASILA_SYMBOLS = [
   {
     silaNumber: 1,
-    symbolName: 'Bintang Emas (Perisai Hitam)',
+    symbolName: 'Bintang Emas (Kartu Hitam)',
     silaTitle: 'Sila ke-1',
     silaText: 'Ketuhanan Yang Maha Esa',
-    shieldDesc: 'Bintang emas bersudut 5 di atas latar perisai hitam legam di tengah perisai Garuda',
+    shieldDesc: 'Bintang emas bersudut 5 di atas kartu persegi hitam legam',
     meaning: 'Percaya kepada Tuhan YME dan saling menghormati perbedaan agama teman.',
     color: 'from-amber-400 to-yellow-500',
     borderColor: 'border-yellow-400',
   },
   {
     silaNumber: 2,
-    symbolName: 'Rantai Emas (Perisai Merah)',
+    symbolName: 'Rantai Emas (Kartu Merah)',
     silaTitle: 'Sila ke-2',
     silaText: 'Kemanusiaan yang Adil dan Beradab',
-    shieldDesc: 'Gelang rantai persegi dan lingkaran emas bersambung rapat di atas latar merah',
+    shieldDesc: 'Mata rantai emas saling menyambung di atas kartu persegi merah',
     meaning: 'Saling menyayangi, bersikap adil, dan suka menolong sesama teman.',
     color: 'from-rose-400 to-red-500',
     borderColor: 'border-red-400',
   },
   {
     silaNumber: 3,
-    symbolName: 'Pohon Beringin (Perisai Putih)',
+    symbolName: 'Pohon Beringin (Kartu Putih)',
     silaTitle: 'Sila ke-3',
     silaText: 'Persatuan Indonesia',
-    shieldDesc: 'Pohon beringin rindang hijau berakar gantung di atas latar perisai putih',
+    shieldDesc: 'Pohon beringin rindang hijau berakar gantung di atas kartu persegi putih',
     meaning: 'Menjaga persatuan, cinta tanah air, dan kompak bekerja sama di sekolah.',
     color: 'from-emerald-500 to-green-600',
     borderColor: 'border-green-400',
   },
   {
     silaNumber: 4,
-    symbolName: 'Kepala Banteng (Perisai Merah)',
+    symbolName: 'Kepala Banteng (Kartu Merah)',
     silaTitle: 'Sila ke-4',
     silaText: 'Kerakyatan yang Dipimpin oleh Hikmat Kebijaksanaan...',
-    shieldDesc: 'Kepala banteng hitam bertanduk kokoh di atas latar perisai merah kebangsaan',
+    shieldDesc: 'Kepala banteng hitam bertanduk gagah di atas kartu persegi merah',
     meaning: 'Bermusyawarah saat memilih ketua kelas dan menghargai pendapat teman.',
     color: 'from-orange-500 to-red-600',
     borderColor: 'border-orange-400',
   },
   {
     silaNumber: 5,
-    symbolName: 'Padi dan Kapas (Perisai Putih)',
+    symbolName: 'Padi dan Kapas (Kartu Putih)',
     silaTitle: 'Sila ke-5',
     silaText: 'Keadilan Sosial bagi Seluruh Rakyat Indonesia',
-    shieldDesc: 'Setangkai padi emas di kanan & kapas putih hijau di kiri di atas latar putih',
+    shieldDesc: 'Setangkai padi emas & kapas putih hijau di atas kartu persegi putih',
     meaning: 'Bersikap adil, tidak pilih kasih, dan suka bergotong royong.',
     color: 'from-amber-300 to-emerald-400',
     borderColor: 'border-amber-400',
@@ -620,8 +620,8 @@ export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
               {/* Left Column: Shuffled Symbol Cards */}
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xs sm:text-sm font-extrabold text-gray-600 uppercase tracking-wide">
-                    Kartu Simbol Garuda Asli (Diacak):
+                  <h3 className="text-xs sm:text-sm font-extrabold text-gray-700 uppercase tracking-wide">
+                    Kartu Lambang Pancasila (Diacak):
                   </h3>
                   <span className="text-[10px] text-gray-400 font-semibold">Pilih satu lambang</span>
                 </div>
@@ -1048,10 +1048,10 @@ export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
                 </div>
                 <div>
                   <h3 className="text-base sm:text-xl font-black text-gray-900">
-                    5 Lambang Asli Perisai Garuda Pancasila
+                    5 Kartu Lambang Garuda Pancasila
                   </h3>
                   <p className="text-xs text-gray-500 font-semibold">
-                    Pedoman Resmi Lambang Negara Kesatuan Republik Indonesia
+                    Pedoman Kartu Lambang Sila-Sila Pancasila Sesuai Gambar Resmi
                   </p>
                 </div>
               </div>
