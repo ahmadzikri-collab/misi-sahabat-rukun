@@ -135,17 +135,7 @@ export const gameDb = {
   },
 
   getLevelProgress(studentId: string): Record<string, LevelProgress> {
-    try {
-      const raw = localStorage.getItem(`${STORAGE_KEYS.LEVEL_PROGRESS}_${studentId}`);
-      if (raw) {
-        return JSON.parse(raw);
-      }
-    } catch {
-      // Fallback
-    }
-
-    // Default: Level 1 unlocked, others locked
-    return {
+    const defaultProgress: Record<string, LevelProgress> = {
       'taman-pancasila': {
         levelId: 'taman-pancasila',
         status: 'unlocked',
@@ -192,6 +182,20 @@ export const gameDb = {
         lastPlayedAt: '',
       },
     };
+
+    try {
+      const raw = localStorage.getItem(`${STORAGE_KEYS.LEVEL_PROGRESS}_${studentId}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          return { ...defaultProgress, ...parsed };
+        }
+      }
+    } catch {
+      // Fallback
+    }
+
+    return defaultProgress;
   },
 
   saveLevelProgress(studentId: string, levelId: string, progressUpdate: Partial<LevelProgress>) {

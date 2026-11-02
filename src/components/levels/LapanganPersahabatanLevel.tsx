@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Star, CheckCircle2, XCircle, Award, ArrowRight, Trophy, Compass, Activity } from 'lucide-react';
+import { Star, CheckCircle2, XCircle, Award, ArrowRight, Trophy, Compass, Activity, RotateCcw } from 'lucide-react';
 import { GuideCharacter } from '../character/GuideCharacter';
 import { VoiceReadButton } from '../audio/VoiceReadButton';
 import { QuestionVoiceBanner } from '../audio/QuestionVoiceBanner';
@@ -22,6 +22,15 @@ interface LapanganPersahabatanLevelProps {
   onBackToMap: () => void;
 }
 
+function shuffleArray<T>(array: T[]): T[] {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 const PJOK_CHALLENGES = [
   {
     id: 'pjok-1',
@@ -39,9 +48,9 @@ const PJOK_CHALLENGES = [
     description: 'Saat bermain lomba lari estafet bersama regu, salah satu teman tersandung dan regu kita kalah.',
     question: 'Sikap sportivitas dan kerukunan apa yang sebaiknya kita tunjukkan?',
     options: [
-      { id: 'opt-1', text: 'Membantu teman berdiri, menghibur, dan tetap bersalaman dengan regu pemenang', isCorrect: true, feedback: 'Hebat! Sportivitas sejati adalah saling menghargai, tidak saling menyalahkan, dan tetap rukun!' },
       { id: 'opt-2', text: 'Marah-marah dan menyalahkan teman yang terjatuh', isCorrect: false, feedback: 'Menyalahkan teman merusak kerukunan dan persahabatan di sekolah.' },
       { id: 'opt-3', text: 'Menangis dan tidak mau bermain lagi', isCorrect: false, feedback: 'Kalah atau menang dalam permainan adalah hal wajar, yang terpenting kita bermain sehat.' },
+      { id: 'opt-1', text: 'Membantu teman berdiri, menghibur, dan tetap bersalaman dengan regu pemenang', isCorrect: true, feedback: 'Hebat! Sportivitas sejati adalah saling menghargai, tidak saling menyalahkan, dan tetap rukun!' },
     ],
     hint: 'Sahabat yang sportif saling tolong-menolong dan lapang dada.',
   },
@@ -50,8 +59,8 @@ const PJOK_CHALLENGES = [
     description: 'Sebelum berolahraga di lapangan bersama guru dan teman-teman kelas 2, apa kegiatan penting yang harus kita lakukan?',
     question: 'Kegiatan awal sebelum lari atau bermain agar otot tidak kram atau cedera:',
     options: [
-      { id: 'opt-1', text: 'Melakukan pemanasan bersama dengan tertib', isCorrect: true, feedback: 'Benar sekali! Pemanasan bersama menyiapkan tubuh dan mempererat kekompakan kelas!' },
       { id: 'opt-2', text: 'Makan permen banyak-banyak', isCorrect: false, feedback: 'Makan permen sebelum olahraga tidak menyehatkan tubuh.' },
+      { id: 'opt-1', text: 'Melakukan pemanasan bersama dengan tertib', isCorrect: true, feedback: 'Benar sekali! Pemanasan bersama menyiapkan tubuh dan mempererat kekompakan kelas!' },
       { id: 'opt-3', text: 'Langsung tiduran di rumput', isCorrect: false, feedback: 'Pemanasan diperlukan agar otot lentur dan aman dari cedera.' },
     ],
     hint: 'Pemanasan mempersiapkan otot tubuh sebelum berolahraga.',
@@ -62,8 +71,8 @@ const PJOK_CHALLENGES = [
     question: 'Sikap apa yang harus dijaga bersama agar permainan olahraga beregu berjalan seru, adil, dan rukun?',
     options: [
       { id: 'opt-1', text: 'Bekerja sama secara kompak dan mematuhi aturan permainan', isCorrect: true, feedback: 'Tepat sekali! Kerja sama yang kompak dan patuh pada aturan membuat permainan terasa adil, aman, dan menyenangkan!' },
-      { id: 'opt-2', text: 'Bermain curang dan mendorong teman agar menang sendiri', isCorrect: false, feedback: 'Bermain curang merugikan teman dan merusak persahabatan di sekolah.' },
       { id: 'opt-3', text: 'Egois dan tidak mau mengoper bola ke teman satu tim', isCorrect: false, feedback: 'Permainan beregu membutuhkan kekompakan dan kerja sama seluruh anggota.' },
+      { id: 'opt-2', text: 'Bermain curang dan mendorong teman agar menang sendiri', isCorrect: false, feedback: 'Bermain curang merugikan teman dan merusak persahabatan di sekolah.' },
     ],
     hint: 'Permainan beregu memerlukan kekompakan dan kepatuhan pada aturan main.',
   },
@@ -72,9 +81,9 @@ const PJOK_CHALLENGES = [
     description: 'Di tengah permainan bola mini, Beni melihat Edo tersandung tali sepatu hingga terjatuh dan lututnya sakit.',
     question: 'Tindakan terpuji apa yang mencerminkan kerukunan dan persahabatan di lapangan?',
     options: [
-      { id: 'opt-1', text: 'Menghentikan permainan sebentar dan menolong Edo ke ruang UKS atau guru', isCorrect: true, feedback: 'Luar biasa! Sahabat sejati selalu mengutamakan kepedulian dan keselamatan teman di atas segalanya!' },
       { id: 'opt-2', text: 'Menertawakan teman yang terjatuh di depan regu lawan', isCorrect: false, feedback: 'Menertawakan teman yang terjatuh adalah sikap tidak terpuji.' },
       { id: 'opt-3', text: 'Membiarkan Edo kesakitan sendirian di rumput', isCorrect: false, feedback: 'Kita harus selalu menolong teman yang kesusahan.' },
+      { id: 'opt-1', text: 'Menghentikan permainan sebentar dan menolong Edo ke ruang UKS atau guru', isCorrect: true, feedback: 'Luar biasa! Sahabat sejati selalu mengutamakan kepedulian dan keselamatan teman di atas segalanya!' },
     ],
     hint: 'Keselamatan teman dan sikap tolong-menolong adalah cermin persahabatan rukun sejati.',
   },
@@ -88,6 +97,7 @@ export const LapanganPersahabatanLevel: React.FC<LapanganPersahabatanLevelProps>
 }) => {
   const [currentStep, setCurrentStep] = useState<'intro' | 'quiz' | 'result'>('intro');
   const [challengeIdx, setChallengeIdx] = useState(0);
+  const [quizSeed, setQuizSeed] = useState(0);
 
   // Anti-Cheat System Hook (deteksi pindah tab, printscreen, copy teks)
   const { violationCount, activeAlert, dismissAlert } = useAntiCheat({
@@ -112,6 +122,9 @@ export const LapanganPersahabatanLevel: React.FC<LapanganPersahabatanLevelProps>
 
   const uciel = getUcielForLocation('lapangan-persahabatan');
   const currentChallenge = PJOK_CHALLENGES[challengeIdx];
+  const currentShuffledOptions = React.useMemo(() => {
+    return shuffleArray(currentChallenge.options);
+  }, [challengeIdx, currentChallenge.id, quizSeed]);
 
   const handleSelectOption = (opt: { id: string; text: string; isCorrect: boolean; feedback: string }) => {
     if (selectedOptionId) return;
@@ -303,8 +316,8 @@ export const LapanganPersahabatanLevel: React.FC<LapanganPersahabatanLevelProps>
             <QuestionVoiceBanner
               situationOrContext={`Aktivitas Olahraga: ${currentChallenge.description}`}
               question={currentChallenge.question}
-              options={currentChallenge.options}
-              questionId={`lapangan-${currentChallenge.id}`}
+              options={currentShuffledOptions}
+              questionId={`lapangan-${currentChallenge.id}-${quizSeed}`}
             />
 
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
@@ -312,7 +325,7 @@ export const LapanganPersahabatanLevel: React.FC<LapanganPersahabatanLevelProps>
                 <span className="text-xs font-black uppercase text-orange-600 block">Aktivitas Olahraga:</span>
                 <VoiceReadButton
                   text={`${currentChallenge.description}. Pertanyaan: ${currentChallenge.question}`}
-                  speechKey={`lapangan-q-${currentChallenge.id}`}
+                  speechKey={`lapangan-q-${currentChallenge.id}-${quizSeed}`}
                   size="xs"
                   label="Dengarkan Soal PJOK"
                 />
@@ -326,7 +339,7 @@ export const LapanganPersahabatanLevel: React.FC<LapanganPersahabatanLevelProps>
             </div>
 
             <div className="space-y-3">
-              {currentChallenge.options.map((opt, optIdx) => {
+              {currentShuffledOptions.map((opt, optIdx) => {
                 const isSelected = selectedOptionId === opt.id;
                 let optStyles = 'bg-white hover:bg-slate-50 border-gray-200 text-gray-800';
 
@@ -358,7 +371,7 @@ export const LapanganPersahabatanLevel: React.FC<LapanganPersahabatanLevelProps>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <VoiceReadButton
                         text={`Pilihan ${String.fromCharCode(65 + optIdx)}: ${opt.text}`}
-                        speechKey={`lapangan-opt-${currentChallenge.id}-${opt.id}`}
+                        speechKey={`lapangan-opt-${currentChallenge.id}-${opt.id}-${quizSeed}`}
                         variant="icon"
                         size="xs"
                         title="Dengarkan pilihan ini"
@@ -465,6 +478,25 @@ export const LapanganPersahabatanLevel: React.FC<LapanganPersahabatanLevelProps>
                   <span>Refleksi Guru terbuka setelah 5 misi tuntas ({student ? gameDb.getCompletedMissionsCount(student.id) : 1}/5)</span>
                 </div>
               )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  soundManager.playClick();
+                  setCurrentStep('quiz');
+                  setChallengeIdx(0);
+                  setQuizSeed((prev) => prev + 1);
+                  setSelectedOptionId(null);
+                  setFeedback(null);
+                  setCorrectCount(0);
+                  setGuideEmotion('idle');
+                  setCustomText('Ayo kita berolahraga lagi! Soal dan pilihan jawaban sudah diacak ulang!');
+                }}
+                className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold text-sm flex items-center justify-center gap-2 cursor-pointer transition-transform active:scale-95"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>Ulangi untuk Berlatih</span>
+              </button>
 
               <button
                 type="button"

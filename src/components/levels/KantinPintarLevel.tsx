@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Star, CheckCircle2, XCircle, Award, ArrowRight, Utensils, Compass, Calculator } from 'lucide-react';
+import { Star, CheckCircle2, XCircle, Award, ArrowRight, Utensils, Compass, Calculator, RotateCcw } from 'lucide-react';
 import { GuideCharacter } from '../character/GuideCharacter';
 import { VoiceReadButton } from '../audio/VoiceReadButton';
 import { QuestionVoiceBanner } from '../audio/QuestionVoiceBanner';
@@ -22,6 +22,15 @@ interface KantinPintarLevelProps {
   onBackToMap: () => void;
 }
 
+function shuffleArray<T>(array: T[]): T[] {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 const MATH_CHALLENGES = [
   {
     id: 'kantin-1',
@@ -29,9 +38,9 @@ const MATH_CHALLENGES = [
     question: 'Berapakah sisa bakso sehat milik Edo sekarang?',
     calculationNote: '15 - 7 = ...',
     options: [
-      { id: 'opt-1', text: '8 butir bakso', isCorrect: true, feedback: 'Tepat sekali! 15 dikurangi 7 adalah 8 butir bakso.' },
       { id: 'opt-2', text: '9 butir bakso', isCorrect: false, feedback: 'Hitunganmu sedikit kelebihan. 15 - 7 = 8.' },
       { id: 'opt-3', text: '6 butir bakso', isCorrect: false, feedback: 'Kurang tepat. Coba hitung mundur dari 15 sebanyak 7 langkah.' },
+      { id: 'opt-1', text: '8 butir bakso', isCorrect: true, feedback: 'Tepat sekali! 15 dikurangi 7 adalah 8 butir bakso.' },
     ],
     hint: 'Gunakan operasi pengurangan: 15 - 7.',
   },
@@ -53,8 +62,8 @@ const MATH_CHALLENGES = [
     question: 'Sebagai anak yang jujur dan rukun, apa yang sebaiknya dilakukan Budi?',
     calculationNote: 'Sikap Kejujuran di Kantin',
     options: [
-      { id: 'opt-1', text: 'Mengembalikan kelebihan uang kepada ibu kantin dengan sopan', isCorrect: true, feedback: 'Luar biasa! Kejujuran adalah pilar utama hidup rukun dan dipercaya teman.' },
       { id: 'opt-2', text: 'Menyimpan uang lebih itu ke dalam saku diam-diam', isCorrect: false, feedback: 'Menyimpan uang yang bukan hak kita adalah perbuatan tidak jujur.' },
+      { id: 'opt-1', text: 'Mengembalikan kelebihan uang kepada ibu kantin dengan sopan', isCorrect: true, feedback: 'Luar biasa! Kejujuran adalah pilar utama hidup rukun dan dipercaya teman.' },
       { id: 'opt-3', text: 'Membagikan uang itu untuk jajan teman lain', isCorrect: false, feedback: 'Meskipun berniat berbagi, uang itu milik penjual kantin dan harus dikembalikan.' },
     ],
     hint: 'Kembalikan barang atau uang yang bukan milik kita dengan jujur.',
@@ -66,8 +75,8 @@ const MATH_CHALLENGES = [
     calculationNote: '24 : 4 = ...',
     options: [
       { id: 'opt-1', text: '6 potong semangka tiap meja', isCorrect: true, feedback: 'Pintar sekali! 24 dibagi 4 adalah 6 potong semangka yang adil dan merata!' },
-      { id: 'opt-2', text: '5 potong semangka', isCorrect: false, feedback: 'Hitung kembali: 4 dikali 6 adalah 24.' },
       { id: 'opt-3', text: '8 potong semangka', isCorrect: false, feedback: 'Kalau 8, 4 x 8 = 32 potong, melebihi semangka yang ada.' },
+      { id: 'opt-2', text: '5 potong semangka', isCorrect: false, feedback: 'Hitung kembali: 4 dikali 6 adalah 24.' },
     ],
     hint: 'Membagi adil sama rata membuat semua teman tersenyum bahagia.',
   },
@@ -77,9 +86,9 @@ const MATH_CHALLENGES = [
     question: 'Bagaimana sikap tertib antre anak yang rukun di kantin sekolah?',
     calculationNote: 'Tertib Mengantre di Kantin',
     options: [
-      { id: 'opt-1', text: 'Berdiri rapi mengantre sesuai urutan kedatangan tanpa menyerobot teman', isCorrect: true, feedback: 'Hebat! Antre dengan tertib mencerminkan budaya disiplin dan menghormati hak teman!' },
       { id: 'opt-2', text: 'Menyerobot dari samping karena merasa lapar sekali', isCorrect: false, feedback: 'Menyerobot antrean merugikan teman yang sudah datang lebih dahulu.' },
       { id: 'opt-3', text: 'Mendorong teman di depan agar cepat maju', isCorrect: false, feedback: 'Mendorong teman bisa membuat makanan tumpah dan berbahaya.' },
+      { id: 'opt-1', text: 'Berdiri rapi mengantre sesuai urutan kedatangan tanpa menyerobot teman', isCorrect: true, feedback: 'Hebat! Antre dengan tertib mencerminkan budaya disiplin dan menghormati hak teman!' },
     ],
     hint: 'Budaya antre yang tertib adalah tanda anak yang disiplin dan rukun.',
   },
@@ -93,6 +102,7 @@ export const KantinPintarLevel: React.FC<KantinPintarLevelProps> = ({
 }) => {
   const [currentStep, setCurrentStep] = useState<'intro' | 'quiz' | 'result'>('intro');
   const [challengeIdx, setChallengeIdx] = useState(0);
+  const [quizSeed, setQuizSeed] = useState(0);
 
   // Anti-Cheat System Hook (deteksi pindah tab, printscreen, copy teks)
   const { violationCount, activeAlert, dismissAlert } = useAntiCheat({
@@ -117,6 +127,9 @@ export const KantinPintarLevel: React.FC<KantinPintarLevelProps> = ({
 
   const uciel = getUcielForLocation('kantin-pintar');
   const currentChallenge = MATH_CHALLENGES[challengeIdx];
+  const currentShuffledOptions = React.useMemo(() => {
+    return shuffleArray(currentChallenge.options);
+  }, [challengeIdx, currentChallenge.id, quizSeed]);
 
   const handleSelectOption = (opt: { id: string; text: string; isCorrect: boolean; feedback: string }) => {
     if (selectedOptionId) return;
@@ -308,8 +321,8 @@ export const KantinPintarLevel: React.FC<KantinPintarLevelProps> = ({
             <QuestionVoiceBanner
               situationOrContext={`Cerita Kantin: ${currentChallenge.situation}`}
               question={currentChallenge.question}
-              options={currentChallenge.options}
-              questionId={`kantin-${currentChallenge.id}`}
+              options={currentShuffledOptions}
+              questionId={`kantin-${currentChallenge.id}-${quizSeed}`}
             />
 
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
@@ -317,7 +330,7 @@ export const KantinPintarLevel: React.FC<KantinPintarLevelProps> = ({
                 <span className="text-xs font-black uppercase text-emerald-600 block">Cerita Kantin:</span>
                 <VoiceReadButton
                   text={`${currentChallenge.situation}. Pertanyaan: ${currentChallenge.question}`}
-                  speechKey={`kantin-q-${currentChallenge.id}`}
+                  speechKey={`kantin-q-${currentChallenge.id}-${quizSeed}`}
                   size="xs"
                   label="Dengarkan Cerita"
                 />
@@ -331,7 +344,7 @@ export const KantinPintarLevel: React.FC<KantinPintarLevelProps> = ({
             </div>
 
             <div className="space-y-3">
-              {currentChallenge.options.map((opt, optIdx) => {
+              {currentShuffledOptions.map((opt, optIdx) => {
                 const isSelected = selectedOptionId === opt.id;
                 let optStyles = 'bg-white hover:bg-slate-50 border-gray-200 text-gray-800';
 
@@ -363,7 +376,7 @@ export const KantinPintarLevel: React.FC<KantinPintarLevelProps> = ({
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <VoiceReadButton
                         text={`Pilihan ${String.fromCharCode(65 + optIdx)}: ${opt.text}`}
-                        speechKey={`kantin-opt-${currentChallenge.id}-${opt.id}`}
+                        speechKey={`kantin-opt-${currentChallenge.id}-${opt.id}-${quizSeed}`}
                         variant="icon"
                         size="xs"
                         title="Dengarkan pilihan ini"
@@ -470,6 +483,25 @@ export const KantinPintarLevel: React.FC<KantinPintarLevelProps> = ({
                   <span>Refleksi Guru terbuka setelah 5 misi tuntas ({student ? gameDb.getCompletedMissionsCount(student.id) : 1}/5)</span>
                 </div>
               )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  soundManager.playClick();
+                  setCurrentStep('quiz');
+                  setChallengeIdx(0);
+                  setQuizSeed((prev) => prev + 1);
+                  setSelectedOptionId(null);
+                  setFeedback(null);
+                  setCorrectCount(0);
+                  setGuideEmotion('idle');
+                  setCustomText('Ayo kita berlatih lagi! Soal dan pilihan jawaban sudah diacak ulang!');
+                }}
+                className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold text-sm flex items-center justify-center gap-2 cursor-pointer transition-transform active:scale-95"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>Ulangi untuk Berlatih</span>
+              </button>
 
               <button
                 type="button"

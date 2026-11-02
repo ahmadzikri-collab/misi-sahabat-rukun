@@ -110,16 +110,16 @@ const SCENARIOS = [
     question: 'Bagaimana tindakan anak yang rukun dan baik hati?',
     options: [
       {
-        id: 'opt-a',
-        text: 'Meminjamkan pensil cadangan atau meminjamkan rautan dengan senyum',
-        isCorrect: true,
-        feedback: 'Tepat sekali! Meminjamkan alat tulis mencerminkan sikap tolong-menolong (Sila ke-2)!',
-      },
-      {
         id: 'opt-b',
         text: 'Menertawakan Siti karena pensilnya patah',
         isCorrect: false,
         feedback: 'Menertawakan teman membuat teman sedih dan merusak kerukunan.',
+      },
+      {
+        id: 'opt-a',
+        text: 'Meminjamkan pensil cadangan atau meminjamkan rautan dengan senyum',
+        isCorrect: true,
+        feedback: 'Tepat sekali! Meminjamkan alat tulis mencerminkan sikap tolong-menolong (Sila ke-2)!',
       },
       {
         id: 'opt-c',
@@ -137,16 +137,16 @@ const SCENARIOS = [
     question: 'Sikap hidup rukun apa yang sebaiknya dilakukan mereka berdua?',
     options: [
       {
-        id: 'opt-a',
-        text: 'Berebut ayunan sampai salah satu menangis',
-        isCorrect: false,
-        feedback: 'Berebut bisa mencelakai teman dan menimbulkan pertengkaran.',
-      },
-      {
         id: 'opt-b',
         text: 'Bergantian menggunakan ayunan secara tertib dan saling menjaga',
         isCorrect: true,
         feedback: 'Hebat! Bermain secara bergantian menunjukkan sikap adil dan rukun!',
+      },
+      {
+        id: 'opt-a',
+        text: 'Berebut ayunan sampai salah satu menangis',
+        isCorrect: false,
+        feedback: 'Berebut bisa mencelakai teman dan menimbulkan pertengkaran.',
       },
       {
         id: 'opt-c',
@@ -164,12 +164,6 @@ const SCENARIOS = [
     question: 'Tindakan yang menunjukkan persatuan dan gotong royong adalah:',
     options: [
       {
-        id: 'opt-a',
-        text: 'Bersama-sama mengumpulkan daun dan saling membantu membersihkan taman',
-        isCorrect: true,
-        feedback: 'Benar sekali! Gotong royong mencerminkan pengamalan Sila ke-3 (Persatuan Indonesia)!',
-      },
-      {
         id: 'opt-b',
         text: 'Duduk bersembunyi di balik pohon dan menunggu teman selesai',
         isCorrect: false,
@@ -181,6 +175,12 @@ const SCENARIOS = [
         isCorrect: false,
         feedback: 'Membuang sampah sembarangan merusak keasrian lingkungan sekolah.',
       },
+      {
+        id: 'opt-a',
+        text: 'Bersama-sama mengumpulkan daun dan saling membantu membersihkan taman',
+        isCorrect: true,
+        feedback: 'Benar sekali! Gotong royong mencerminkan pengamalan Sila ke-3 (Persatuan Indonesia)!',
+      },
     ],
     hint: 'Kerja sama membuat pekerjaan berat menjadi terasa ringan dan cepat selesai.',
   },
@@ -191,16 +191,16 @@ const SCENARIOS = [
     question: 'Sikap yang mencerminkan pengamalan Sila ke-4 Pancasila adalah:',
     options: [
       {
-        id: 'opt-a',
-        text: 'Menghargai pendapat teman dan menerima hasil keputusan musyawarah dengan lapang dada',
-        isCorrect: true,
-        feedback: 'Luar biasa! Musyawarah mufakat dan menghargai keputusan bersama adalah inti Sila ke-4!',
-      },
-      {
         id: 'opt-b',
         text: 'Memaksakan kehendak sendiri agar terpilih menjadi ketua kelas',
         isCorrect: false,
         feedback: 'Memaksakan kehendak bertentangan dengan semangat musyawarah.',
+      },
+      {
+        id: 'opt-a',
+        text: 'Menghargai pendapat teman dan menerima hasil keputusan musyawarah dengan lapang dada',
+        isCorrect: true,
+        feedback: 'Luar biasa! Musyawarah mufakat dan menghargai keputusan bersama adalah inti Sila ke-4!',
       },
       {
         id: 'opt-c',
@@ -218,12 +218,6 @@ const SCENARIOS = [
     question: 'Sikap toleransi dan kerukunan yang sesuai dengan Sila ke-1 adalah:',
     options: [
       {
-        id: 'opt-a',
-        text: 'Berdoa dengan khusyuk dan saling menghormati teman yang berbeda cara beribadah',
-        isCorrect: true,
-        feedback: 'Hebat! Saling menghormati perbedaan agama adalah wujud nyata Sila ke-1 (Ketuhanan Yang Maha Esa)!',
-      },
-      {
         id: 'opt-b',
         text: 'Mengganggu atau menertawakan teman yang sedang berdoa',
         isCorrect: false,
@@ -234,6 +228,12 @@ const SCENARIOS = [
         text: 'Berbicara keras-keras saat waktu doa berlangsung',
         isCorrect: false,
         feedback: 'Kita harus bersikap tenang dan menghormati waktu berdoa bersama.',
+      },
+      {
+        id: 'opt-a',
+        text: 'Berdoa dengan khusyuk dan saling menghormati teman yang berbeda cara beribadah',
+        isCorrect: true,
+        feedback: 'Hebat! Saling menghormati perbedaan agama adalah wujud nyata Sila ke-1 (Ketuhanan Yang Maha Esa)!',
       },
     ],
     hint: 'Sila ke-1 dilambangkan bintang emas yang mengajarkan toleransi beragama.',
@@ -282,9 +282,15 @@ export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
 
   // Scenario state
   const [scenarioIndex, setScenarioIndex] = useState(0);
+  const [quizSeed, setQuizSeed] = useState(0);
   const [selectedScenarioOpt, setSelectedScenarioOpt] = useState<string | null>(null);
   const [scenarioFeedback, setScenarioFeedback] = useState<{ isCorrect: boolean; text: string } | null>(null);
   const [scenarioCorrectCount, setScenarioCorrectCount] = useState(0);
+
+  const currentScenario = SCENARIOS[scenarioIndex];
+  const currentShuffledScenarioOptions = React.useMemo(() => {
+    return shuffleArray(currentScenario.options);
+  }, [scenarioIndex, currentScenario.id, quizSeed]);
 
   // Character emotional dialogue control
   const [guideEmotion, setGuideEmotion] = useState<EmotionState>('idle');
@@ -773,10 +779,10 @@ export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
 
             {/* Voice Guidance Banner */}
             <QuestionVoiceBanner
-              situationOrContext={SCENARIOS[scenarioIndex].context}
-              question={SCENARIOS[scenarioIndex].question}
-              options={SCENARIOS[scenarioIndex].options}
-              questionId={`taman-${SCENARIOS[scenarioIndex].id}`}
+              situationOrContext={currentScenario.context}
+              question={currentScenario.question}
+              options={currentShuffledScenarioOptions}
+              questionId={`taman-${currentScenario.id}-${quizSeed}`}
             />
 
             {/* Scenario Prompt */}
@@ -784,26 +790,26 @@ export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black uppercase tracking-wider text-red-600 flex items-center gap-1.5">
                   <Users className="w-4 h-4" />
-                  {SCENARIOS[scenarioIndex].title}
+                  {currentScenario.title}
                 </span>
                 <VoiceReadButton
-                  text={`${SCENARIOS[scenarioIndex].context}. Pertanyaan: ${SCENARIOS[scenarioIndex].question}`}
-                  speechKey={`sc-q-${SCENARIOS[scenarioIndex].id}`}
+                  text={`${currentScenario.context}. Pertanyaan: ${currentScenario.question}`}
+                  speechKey={`sc-q-${currentScenario.id}-${quizSeed}`}
                   size="xs"
                   label="Dengarkan Cerita"
                 />
               </div>
               <p className="text-sm sm:text-base font-semibold text-gray-700">
-                "{SCENARIOS[scenarioIndex].context}"
+                "{currentScenario.context}"
               </p>
               <h3 className="text-base sm:text-lg font-black text-gray-900 pt-1">
-                ❓ {SCENARIOS[scenarioIndex].question}
+                ❓ {currentScenario.question}
               </h3>
             </div>
 
             {/* Answer Options */}
             <div className="space-y-3">
-              {SCENARIOS[scenarioIndex].options.map((opt, optIdx) => {
+              {currentShuffledScenarioOptions.map((opt, optIdx) => {
                 const isSelected = selectedScenarioOpt === opt.id;
                 let optStyles = 'bg-white hover:bg-slate-50 border-gray-200 text-gray-800';
 
@@ -835,7 +841,7 @@ export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <VoiceReadButton
                         text={`Pilihan ${String.fromCharCode(65 + optIdx)}: ${opt.text}`}
-                        speechKey={`sc-opt-${SCENARIOS[scenarioIndex].id}-${opt.id}`}
+                        speechKey={`sc-opt-${currentScenario.id}-${opt.id}-${quizSeed}`}
                         variant="icon"
                         size="xs"
                         title="Dengarkan pilihan ini"
@@ -958,6 +964,7 @@ export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
                   soundManager.playClick();
                   // Reset state to replay
                   setCurrentStep('match_symbols');
+                  setQuizSeed((prev) => prev + 1);
                   setShuffledSymbols(shuffleArray(PANCASILA_SYMBOLS));
                   setShuffledSilas(shuffleArray(PANCASILA_SYMBOLS));
                   setMatchedPairs([]);

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Star, CheckCircle2, XCircle, Award, ArrowRight, Palette, Compass } from 'lucide-react';
+import { Star, CheckCircle2, XCircle, Award, ArrowRight, Palette, Compass, RotateCcw } from 'lucide-react';
 import { GuideCharacter } from '../character/GuideCharacter';
 import { VoiceReadButton } from '../audio/VoiceReadButton';
 import { QuestionVoiceBanner } from '../audio/QuestionVoiceBanner';
@@ -22,14 +22,23 @@ interface StudioKreatifLevelProps {
   onBackToMap: () => void;
 }
 
+function shuffleArray<T>(array: T[]): T[] {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 const ART_CHALLENGES = [
   {
     id: 'studio-1',
     description: 'Lukisan pemandangan taman sekolah yang digambar di atas selembar kertas buku gambar.',
     question: 'Karya seni di atas termasuk jenis karya seni apa?',
     options: [
-      { id: 'opt-1', text: 'Karya Dua Dimensi (2D) — hanya memiliki panjang dan lebar', isCorrect: true, feedback: 'Tepat sekali! Gambar di atas kertas adalah karya 2 dimensi karena hanya bisa dilihat dari satu arah depan.' },
       { id: 'opt-2', text: 'Karya Tiga Dimensi (3D)', isCorrect: false, feedback: 'Kurang tepat. Gambar di kertas tidak memiliki ruang/volume tebal.' },
+      { id: 'opt-1', text: 'Karya Dua Dimensi (2D) — hanya memiliki panjang dan lebar', isCorrect: true, feedback: 'Tepat sekali! Gambar di atas kertas adalah karya 2 dimensi karena hanya bisa dilihat dari satu arah depan.' },
       { id: 'opt-3', text: 'Benda Elektronik', isCorrect: false, feedback: 'Kertas gambar bukan barang elektronik.' },
     ],
     hint: 'Karya 2D hanya memiliki panjang dan lebar di permukaan datar.',
@@ -39,9 +48,9 @@ const ART_CHALLENGES = [
     description: 'Vas bunga dan patung burung garuda yang dibentuk dari tanah liat atau plastisin lilin mainan.',
     question: 'Benda seni tersebut termasuk contoh karya apa?',
     options: [
-      { id: 'opt-1', text: 'Karya Tiga Dimensi (3D) — memiliki panjang, lebar, dan volume tebal', isCorrect: true, feedback: 'Benar sekali! Patung dan vas memiliki ruang dan dapat dilihat dari segala sisi (depan, samping, belakang)!' },
-      { id: 'opt-2', text: 'Karya Satu Dimensi', isCorrect: false, feedback: 'Patung memiliki ketebalan dan volume, jadi karya 3 dimensi.' },
       { id: 'opt-3', text: 'Gambar lukisan datar', isCorrect: false, feedback: 'Patung tanah liat adalah benda nyata, bukan lukisan datar.' },
+      { id: 'opt-2', text: 'Karya Satu Dimensi', isCorrect: false, feedback: 'Patung memiliki ketebalan dan volume, jadi karya 3 dimensi.' },
+      { id: 'opt-1', text: 'Karya Tiga Dimensi (3D) — memiliki panjang, lebar, dan volume tebal', isCorrect: true, feedback: 'Benar sekali! Patung dan vas memiliki ruang dan dapat dilihat dari segala sisi (depan, samping, belakang)!' },
     ],
     hint: 'Karya 3 dimensi memiliki ruang atau volume dan bisa dipegang dari segala arah.',
   },
@@ -61,9 +70,9 @@ const ART_CHALLENGES = [
     description: 'Siti dan Dayu menempelkan berbagai biji-bijian dan potongan kertas warna-warni pada gambar pola burung garuda hingga tertutup rapi.',
     question: 'Karya seni rupa dua dimensi yang dibuat dengan teknik menempel bahan pada pola gambar disebut:',
     options: [
+      { id: 'opt-3', text: 'Origami lipat tanpa lem', isCorrect: false, feedback: 'Origami adalah seni melipat kertas, bukan menempel bahan pada pola.' },
       { id: 'opt-1', text: 'Karya Seni Kolase (seni tempel)', isCorrect: true, feedback: 'Tepat sekali! Kolase dibuat dengan menempelkan bahan alami atau buatan pada pola gambar.' },
       { id: 'opt-2', text: 'Pahatan Batu Keras', isCorrect: false, feedback: 'Memahat batu adalah seni patung 3D, bukan seni tempel kolase.' },
-      { id: 'opt-3', text: 'Origami lipat tanpa lem', isCorrect: false, feedback: 'Origami adalah seni melipat kertas, bukan menempel bahan pada pola.' },
     ],
     hint: 'Seni menempel berbagai bahan pada permukaan gambar disebut kolase.',
   },
@@ -72,9 +81,9 @@ const ART_CHALLENGES = [
     description: 'Lani dan Edo selesai mewarnai gambar imajinatif tentang kerja sama di kelas. Gambar Lani rapi dan gambar Edo berwarna cerah.',
     question: 'Bagaimana sikap hidup rukun yang baik terhadap hasil karya seni teman sebangku?',
     options: [
-      { id: 'opt-1', text: 'Saling memuji, menghargai keindahan karya, dan tetap rukun', isCorrect: true, feedback: 'Luar biasa! Menghargai dan memberi apresiasi pada karya teman adalah wujud nyata persahabatan rukun!' },
       { id: 'opt-2', text: 'Mencoret dan merusak gambar teman karena iri', isCorrect: false, feedback: 'Merusak karya teman perbuatan buruk dan merusak kerukunan.' },
       { id: 'opt-3', text: 'Mengejek dan membandingkan secara sombong', isCorrect: false, feedback: 'Sombong dan mengejek bertentangan dengan sikap sahabat rukun.' },
+      { id: 'opt-1', text: 'Saling memuji, menghargai keindahan karya, dan tetap rukun', isCorrect: true, feedback: 'Luar biasa! Menghargai dan memberi apresiasi pada karya teman adalah wujud nyata persahabatan rukun!' },
     ],
     hint: 'Sahabat yang baik saling memberi pujian dan menghargai karya satu sama lain.',
   },
@@ -88,6 +97,7 @@ export const StudioKreatifLevel: React.FC<StudioKreatifLevelProps> = ({
 }) => {
   const [currentStep, setCurrentStep] = useState<'intro' | 'quiz' | 'result'>('intro');
   const [challengeIdx, setChallengeIdx] = useState(0);
+  const [quizSeed, setQuizSeed] = useState(0);
 
   // Anti-Cheat System Hook (deteksi pindah tab, printscreen, copy teks)
   const { violationCount, activeAlert, dismissAlert } = useAntiCheat({
@@ -112,6 +122,9 @@ export const StudioKreatifLevel: React.FC<StudioKreatifLevelProps> = ({
 
   const uciel = getUcielForLocation('studio-kreatif');
   const currentChallenge = ART_CHALLENGES[challengeIdx];
+  const currentShuffledOptions = React.useMemo(() => {
+    return shuffleArray(currentChallenge.options);
+  }, [challengeIdx, currentChallenge.id, quizSeed]);
 
   const handleSelectOption = (opt: { id: string; text: string; isCorrect: boolean; feedback: string }) => {
     if (selectedOptionId) return;
@@ -303,8 +316,8 @@ export const StudioKreatifLevel: React.FC<StudioKreatifLevelProps> = ({
             <QuestionVoiceBanner
               situationOrContext={`Karya Seni: ${currentChallenge.description}`}
               question={currentChallenge.question}
-              options={currentChallenge.options}
-              questionId={`studio-${currentChallenge.id}`}
+              options={currentShuffledOptions}
+              questionId={`studio-${currentChallenge.id}-${quizSeed}`}
             />
 
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
@@ -312,7 +325,7 @@ export const StudioKreatifLevel: React.FC<StudioKreatifLevelProps> = ({
                 <span className="text-xs font-black uppercase text-purple-600 block">Karya Seni:</span>
                 <VoiceReadButton
                   text={`${currentChallenge.description}. Pertanyaan: ${currentChallenge.question}`}
-                  speechKey={`studio-q-${currentChallenge.id}`}
+                  speechKey={`studio-q-${currentChallenge.id}-${quizSeed}`}
                   size="xs"
                   label="Dengarkan Soal Seni"
                 />
@@ -326,7 +339,7 @@ export const StudioKreatifLevel: React.FC<StudioKreatifLevelProps> = ({
             </div>
 
             <div className="space-y-3">
-              {currentChallenge.options.map((opt, optIdx) => {
+              {currentShuffledOptions.map((opt, optIdx) => {
                 const isSelected = selectedOptionId === opt.id;
                 let optStyles = 'bg-white hover:bg-slate-50 border-gray-200 text-gray-800';
 
@@ -358,7 +371,7 @@ export const StudioKreatifLevel: React.FC<StudioKreatifLevelProps> = ({
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <VoiceReadButton
                         text={`Pilihan ${String.fromCharCode(65 + optIdx)}: ${opt.text}`}
-                        speechKey={`studio-opt-${currentChallenge.id}-${opt.id}`}
+                        speechKey={`studio-opt-${currentChallenge.id}-${opt.id}-${quizSeed}`}
                         variant="icon"
                         size="xs"
                         title="Dengarkan pilihan ini"
@@ -465,6 +478,25 @@ export const StudioKreatifLevel: React.FC<StudioKreatifLevelProps> = ({
                   <span>Refleksi Guru terbuka setelah 5 misi tuntas ({student ? gameDb.getCompletedMissionsCount(student.id) : 1}/5)</span>
                 </div>
               )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  soundManager.playClick();
+                  setCurrentStep('quiz');
+                  setChallengeIdx(0);
+                  setQuizSeed((prev) => prev + 1);
+                  setSelectedOptionId(null);
+                  setFeedback(null);
+                  setCorrectCount(0);
+                  setGuideEmotion('idle');
+                  setCustomText('Ayo kita berkreasi lagi! Soal dan pilihan jawaban sudah diacak ulang!');
+                }}
+                className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold text-sm flex items-center justify-center gap-2 cursor-pointer transition-transform active:scale-95"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>Ulangi untuk Berlatih</span>
+              </button>
 
               <button
                 type="button"

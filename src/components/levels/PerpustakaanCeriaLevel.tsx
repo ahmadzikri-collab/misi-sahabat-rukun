@@ -22,14 +22,23 @@ interface PerpustakaanCeriaLevelProps {
   onBackToMap: () => void;
 }
 
+function shuffleArray<T>(array: T[]): T[] {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 const SENTENCE_CHALLENGES = [
   {
     id: 'perpus-1',
     sentence: '"Ayo, mari kita membaca buku dongeng bersama di pojok baca!"',
     question: 'Kalimat di atas termasuk jenis kalimat apa?',
     options: [
-      { id: 'opt-1', text: 'Kalimat Ajakan (mengajak teman secara ramah)', isCorrect: true, feedback: 'Tepat sekali! Kata "Ayo" dan "Mari" adalah ciri khas kalimat ajakan.' },
       { id: 'opt-2', text: 'Kalimat Marah-marah', isCorrect: false, feedback: 'Bukan, ini kalimat yang sangat ramah dan mengajak.' },
+      { id: 'opt-1', text: 'Kalimat Ajakan (mengajak teman secara ramah)', isCorrect: true, feedback: 'Tepat sekali! Kata "Ayo" dan "Mari" adalah ciri khas kalimat ajakan.' },
       { id: 'opt-3', text: 'Kalimat Penolakan', isCorrect: false, feedback: 'Kurang tepat, kalimat ini justru mengajak teman membaca.' },
     ],
     hint: 'Perhatikan kata awal "Ayo" dan "Mari".',
@@ -39,9 +48,9 @@ const SENTENCE_CHALLENGES = [
     sentence: '"Maaf ya Edo, bukunya sedang aku baca. Nanti setelah selesai kupinjamkan kepadamu."',
     question: 'Kalimat di atas adalah contoh dari:',
     options: [
-      { id: 'opt-1', text: 'Kalimat Penolakan yang Santun (sopan dan tidak menyinggung teman)', isCorrect: true, feedback: 'Benar sekali! Menolak dengan kata "Maaf" dan alasan yang baik adalah sikap rukun.' },
       { id: 'opt-2', text: 'Kalimat Ejekan', isCorrect: false, feedback: 'Bukan, tidak ada kata ejekan di sini.' },
       { id: 'opt-3', text: 'Kalimat Perintah kasar', isCorrect: false, feedback: 'Bukan, tutur katanya sangat lembut dan santun.' },
+      { id: 'opt-1', text: 'Kalimat Penolakan yang Santun (sopan dan tidak menyinggung teman)', isCorrect: true, feedback: 'Benar sekali! Menolak dengan kata "Maaf" dan alasan yang baik adalah sikap rukun.' },
     ],
     hint: 'Awalan "Maaf" digunakan saat kita belum bisa memenuhi ajakan atau permintaan teman.',
   },
@@ -61,8 +70,8 @@ const SENTENCE_CHALLENGES = [
     sentence: '"Terima kasih banyak ya Siti, sudah membantuku menemukan buku ensiklopedia hewan."',
     question: 'Kapan sebaiknya kita mengucapkan kalimat ungkapan terima kasih?',
     options: [
-      { id: 'opt-1', text: 'Setelah mendapat pertolongan, kebaikan, atau hadiah dari orang lain', isCorrect: true, feedback: 'Pintar sekali! Mengucapkan terima kasih adalah tanda kita menghargai kebaikan teman!' },
       { id: 'opt-2', text: 'Saat sedang marah karena kalah permainan', isCorrect: false, feedback: 'Ucapan terima kasih diucapkan dengan hati tulus atas kebaikan teman.' },
+      { id: 'opt-1', text: 'Setelah mendapat pertolongan, kebaikan, atau hadiah dari orang lain', isCorrect: true, feedback: 'Pintar sekali! Mengucapkan terima kasih adalah tanda kita menghargai kebaikan teman!' },
       { id: 'opt-3', text: 'Hanya jika disuruh guru saja', isCorrect: false, feedback: 'Kita harus berterima kasih secara spontan dan tulus kepada siapa saja.' },
     ],
     hint: 'Ungkapan rasa syukur dan menghargai bantuan teman.',
@@ -72,9 +81,9 @@ const SENTENCE_CHALLENGES = [
     sentence: '"Budi, bolehkah aku meminjam pensil warnamu sebentar?"',
     question: 'Kalimat di atas merupakan contoh kalimat permintaan izin yang baik karena diawali kata:',
     options: [
-      { id: 'opt-1', text: 'Bolehkah (meminta izin secara santun sebelum memakai barang orang lain)', isCorrect: true, feedback: 'Tepat sekali! Meminta izin sebelum memakai barang teman adalah cermin anak yang berakhlak mulia!' },
       { id: 'opt-2', text: 'Ambilkan sekarang juga', isCorrect: false, feedback: 'Itu perintah yang memaksa dan tidak sopan.' },
       { id: 'opt-3', text: 'Jangan pelit kamu', isCorrect: false, feedback: 'Kata ejekan merusak kerukunan persahabatan.' },
+      { id: 'opt-1', text: 'Bolehkah (meminta izin secara santun sebelum memakai barang orang lain)', isCorrect: true, feedback: 'Tepat sekali! Meminta izin sebelum memakai barang teman adalah cermin anak yang berakhlak mulia!' },
     ],
     hint: 'Selalu minta izin secara santun sebelum meminjam barang milik teman.',
   },
@@ -88,6 +97,7 @@ export const PerpustakaanCeriaLevel: React.FC<PerpustakaanCeriaLevelProps> = ({
 }) => {
   const [currentStep, setCurrentStep] = useState<'intro' | 'quiz' | 'result'>('intro');
   const [challengeIdx, setChallengeIdx] = useState(0);
+  const [quizSeed, setQuizSeed] = useState(0);
   const [showReflectionModal, setShowReflectionModal] = useState(false);
   const [hasFilledReflection, setHasFilledReflection] = useState(false);
 
@@ -111,6 +121,9 @@ export const PerpustakaanCeriaLevel: React.FC<PerpustakaanCeriaLevelProps> = ({
   const [earnedXP, setEarnedXP] = useState(150);
 
   const currentChallenge = SENTENCE_CHALLENGES[challengeIdx];
+  const currentShuffledOptions = React.useMemo(() => {
+    return shuffleArray(currentChallenge.options);
+  }, [challengeIdx, currentChallenge.id, quizSeed]);
 
   const handleSelectOption = (opt: { id: string; text: string; isCorrect: boolean; feedback: string }) => {
     if (selectedOptionId) return;
@@ -304,8 +317,8 @@ export const PerpustakaanCeriaLevel: React.FC<PerpustakaanCeriaLevelProps> = ({
             <QuestionVoiceBanner
               situationOrContext={`Kalimat: ${currentChallenge.sentence}`}
               question={currentChallenge.question}
-              options={currentChallenge.options}
-              questionId={`perpus-${currentChallenge.id}`}
+              options={currentShuffledOptions}
+              questionId={`perpus-${currentChallenge.id}-${quizSeed}`}
             />
 
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
@@ -313,7 +326,7 @@ export const PerpustakaanCeriaLevel: React.FC<PerpustakaanCeriaLevelProps> = ({
                 <span className="text-xs font-black uppercase text-blue-600 block">Kalimat Percakapan:</span>
                 <VoiceReadButton
                   text={`${currentChallenge.sentence}. Pertanyaan: ${currentChallenge.question}`}
-                  speechKey={`perpus-q-${currentChallenge.id}`}
+                  speechKey={`perpus-q-${currentChallenge.id}-${quizSeed}`}
                   size="xs"
                   label="Dengarkan Percakapan"
                 />
@@ -327,7 +340,7 @@ export const PerpustakaanCeriaLevel: React.FC<PerpustakaanCeriaLevelProps> = ({
             </div>
 
             <div className="space-y-3">
-              {currentChallenge.options.map((opt, optIdx) => {
+              {currentShuffledOptions.map((opt, optIdx) => {
                 const isSelected = selectedOptionId === opt.id;
                 let optStyles = 'bg-white hover:bg-slate-50 border-gray-200 text-gray-800';
 
@@ -359,7 +372,7 @@ export const PerpustakaanCeriaLevel: React.FC<PerpustakaanCeriaLevelProps> = ({
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <VoiceReadButton
                         text={`Pilihan ${String.fromCharCode(65 + optIdx)}: ${opt.text}`}
-                        speechKey={`perpus-opt-${currentChallenge.id}-${opt.id}`}
+                        speechKey={`perpus-opt-${currentChallenge.id}-${opt.id}-${quizSeed}`}
                         variant="icon"
                         size="xs"
                         title="Dengarkan pilihan ini"
@@ -466,6 +479,25 @@ export const PerpustakaanCeriaLevel: React.FC<PerpustakaanCeriaLevelProps> = ({
                   <span>Refleksi Guru terbuka setelah 5 misi tuntas ({student ? gameDb.getCompletedMissionsCount(student.id) : 1}/5)</span>
                 </div>
               )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  soundManager.playClick();
+                  setCurrentStep('quiz');
+                  setChallengeIdx(0);
+                  setQuizSeed((prev) => prev + 1);
+                  setSelectedOptionId(null);
+                  setFeedback(null);
+                  setCorrectCount(0);
+                  setGuideEmotion('idle');
+                  setCustomText('Ayo kita berlatih lagi! Soal dan pilihan jawaban sudah diacak ulang!');
+                }}
+                className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold text-sm flex items-center justify-center gap-2 cursor-pointer transition-transform active:scale-95"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>Ulangi untuk Berlatih</span>
+              </button>
 
               <button
                 type="button"

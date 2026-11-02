@@ -241,6 +241,44 @@ function playMusicBoxMelody(sectionIndex = 0) {
   });
 }
 
+/**
+ * Membersihkan teks dari emoji, tanda baca berlebih, dan menormalisasi singkatan
+ * agar suara pemandu Uciel terdengar jernih, fasih, dan natural tanpa distorsi robotik
+ */
+function cleanTextForIndonesianSpeech(raw: string): string {
+  if (!raw) return '';
+  let s = raw;
+
+  // 1. Bersihkan emoji & ikon karakter grafis yang merusak suara pembacaan TTS
+  s = s.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}]/gu, ' ');
+  s = s.replace(/[💡❓✨🎉⭐🏆🥇🥈🥉🌱❤️🛡️📚🍎🎨⚽👍🏻👏🏻😊😃🙋‍♂️🙋‍♀️⚪]/g, ' ');
+
+  // 2. Normalisasi singkatan pelajaran & istilah sekolah agar dibaca fasih dan ramah anak
+  s = s.replace(/\bPPKn\b/gi, 'P P K N');
+  s = s.replace(/\bPJOK\b/gi, 'P J O K');
+  s = s.replace(/\bSBdP\b/gi, 'S B D P');
+  s = s.replace(/\bSD\b/gi, 'S D');
+  s = s.replace(/\bYME\b/gi, 'Yang Maha Esa');
+  s = s.replace(/\bUKS\b/gi, 'U K S');
+  s = s.replace(/\bNo\.\s*(\d+)/gi, 'Nomor $1');
+  s = s.replace(/\bRp\s*(\d+)/gi, '$1 rupiah');
+  s = s.replace(/(\d+)\s*:\s*(\d+)/g, '$1 dibagi $2');
+  s = s.replace(/(\d+)\s*\+\s*(\d+)/g, '$1 ditambah $2');
+  s = s.replace(/(\d+)\s*-\s*(\d+)/g, '$1 dikurang $2');
+  s = s.replace(/(\d+)\s*x\s*(\d+)/gi, '$1 dikali $2');
+  s = s.replace(/2D\b/gi, 'dua dimensi');
+  s = s.replace(/3D\b/gi, 'tiga dimensi');
+  s = s.replace(/\bSila ke-(\d+)/gi, 'Sila ke $1');
+
+  // 3. Bersihkan tanda kutip dan tanda kurung agar intonasi mengalir natural
+  s = s.replace(/["'“”«»()]/g, ' ');
+  s = s.replace(/[—–]/g, ', ');
+  s = s.replace(/\.{2,}/g, '. ');
+  s = s.replace(/\s+/g, ' ').trim();
+
+  return s;
+}
+
 export const soundManager = {
   get isMuted() {
     return isSoundMuted;
@@ -305,6 +343,28 @@ export const soundManager = {
 
   toggleAudioBoost(): boolean {
     return false;
+  },
+
+  /**
+   * Melodi Lonceng Ceria Maskot Uciel ("Ting-Ting-Ting! ✨")
+   * Nada lonceng jernih, manis, dan asik untuk memikat perhatian anak sebelum Uciel bersuara
+   */
+  playGuideAttentionChime() {
+    if (isSoundMuted) return;
+    try {
+      const notes = [
+        { f: 659.25, d: 0.12, t: 0.00 }, // E5
+        { f: 880.00, d: 0.12, t: 0.07 }, // A5
+        { f: 1174.66, d: 0.18, t: 0.14 }, // D6
+      ];
+      notes.forEach((n) => {
+        setTimeout(() => {
+          playHarmonicTone(n.f, n.d, 'sine', 0.22);
+        }, n.t * 1000);
+      });
+    } catch {
+      // ignore
+    }
   },
 
   /**
@@ -472,11 +532,11 @@ export const soundManager = {
   },
 
   /**
-   * Suara Ramah Anak & Imut untuk Maskot Uciel menggunakan Web Speech API
-   * - Pitch: 1.32 (Nada ceria, imut, hangat ramah anak kelas 2 SD)
-   * - Rate: 0.96 (Tempo energik, natural, jelas dan artikulatif)
-   * - Volume: 1.0 (Maksimal sistem)
-   * - Disertai cuitan imut maskot sebelum mulai bicara
+   * Suara Ramah Anak, Jernih, Ceria & Asik untuk Maskot Uciel menggunakan Web Speech API
+   * - Pitch: 1.15 (Hangat, ceria, imut alami tanpa distorsi robotik/pecah)
+   * - Rate: 1.0 (Tempo energik, artikulasi jernih dan mudah dipahami siswa kelas 2 SD)
+   * - Volume: 1.0 (Maksimal jernih)
+   * - Melodi lonceng ceria sebelum Uciel bersuara untuk memikat perhatian anak
    */
   speak(text: string, keyOrOnEnd?: string | (() => void), onEndCallback?: () => void) {
     if (!isTtsEnabled || isSoundMuted || typeof window === 'undefined' || !('speechSynthesis' in window)) {
@@ -504,22 +564,29 @@ export const soundManager = {
     }
 
     try {
-      // Perbaiki bug Chrome Android yang sering menggantung (paused)
       if (window.speechSynthesis.paused) {
         window.speechSynthesis.resume();
       }
       window.speechSynthesis.cancel();
       notifySpeechListeners(assignedKey);
 
-      const utterance = new SpeechSynthesisUtterance(text);
+      // Bersihkan teks agar bebas dari karakter canggung/emoji
+      const cleanText = cleanTextForIndonesianSpeech(text);
+      if (!cleanText) {
+        notifySpeechListeners(null);
+        if (onEnd) onEnd();
+        return;
+      }
+
+      const utterance = new SpeechSynthesisUtterance(cleanText);
       utterance.lang = 'id-ID';
 
-      // Suara ramah, imut khas anak-anak kelas 2 SD & maskot cilik Uciel
+      // Suara jernih, ceria, natural, dan asik khas anak-anak kelas 2 SD
       utterance.volume = 1.0;
-      utterance.pitch = 1.45; // Nada imut & ceria seperti suara anak-anak
-      utterance.rate = 1.02;  // Tempo energik, ceria, artikulasi jelas dan ramah anak
+      utterance.pitch = 1.15; // Nada ceria, bersahabat, bebas dari distorsi robotik
+      utterance.rate = 1.0;   // Tempo pas, artikulasi jelas dan sangat ramah anak
 
-      // Ambil suara terbaru dari browser
+      // Ambil daftar suara dari browser
       let voices = window.speechSynthesis.getVoices();
       if (!voices || voices.length === 0) {
         voices = cachedVoices;
@@ -549,14 +616,16 @@ export const soundManager = {
       };
 
       if (idVoices.length > 0) {
-        // Prioritaskan suara anak-anak / gadis / wanita muda yang paling imut dan ramah (hindari suara pria dewasa)
+        // Prioritaskan suara perempuan / muda berkualitas tinggi (Google Natural / Gadis / Damayanti)
         const preferredVoice =
           idVoices.find((v) => {
             const n = v.name.toLowerCase();
+            return n.includes('natural') || n.includes('neural') || n.includes('online');
+          }) ||
+          idVoices.find((v) => v.name.toLowerCase().includes('google bahasa indonesia')) ||
+          idVoices.find((v) => {
+            const n = v.name.toLowerCase();
             return (
-              n.includes('anak') ||
-              n.includes('child') ||
-              n.includes('kid') ||
               n.includes('gadis') ||
               n.includes('damayanti') ||
               n.includes('santi') ||
@@ -568,13 +637,12 @@ export const soundManager = {
               n.includes('perempuan')
             );
           }) ||
-          idVoices.find((v) => !isMaleVoice(v)) || // hindari suara laki-laki berat
-          idVoices.find((v) => v.name.toLowerCase().includes('google bahasa indonesia')) ||
+          idVoices.find((v) => !isMaleVoice(v)) ||
           idVoices[0];
 
         utterance.voice = preferredVoice;
       } else {
-        // Fallback jika ponsel/browser belum mengunduh suara Bahasa Indonesia
+        // Fallback lembut jika browser belum mengunduh model Bahasa Indonesia
         const gentleVoice = voices.find((v) => {
           const n = v.name.toLowerCase();
           return (
@@ -592,13 +660,12 @@ export const soundManager = {
         }
       }
 
-      // Watchdog timeout pencegah macet di HP Android jika event onend tidak dipicu
       const watchdog = setTimeout(() => {
         if (currentSpeechKey === assignedKey) {
           notifySpeechListeners(null);
           if (onEnd) onEnd();
         }
-      }, 16000);
+      }, 18000);
 
       utterance.onend = () => {
         clearTimeout(watchdog);
@@ -620,7 +687,7 @@ export const soundManager = {
   },
 
   /**
-   * Membaca seluruh pertanyaan dan pilihan jawaban secara runut dan ramah anak
+   * Membaca seluruh pertanyaan dan pilihan jawaban secara runut, asik, dan menarik perhatian anak
    */
   speakQuestionAndOptions(
     key: string,
@@ -629,19 +696,24 @@ export const soundManager = {
     options: { id?: string; text: string }[],
     onEnd?: () => void
   ) {
-    const formattedIntro = intro ? `${intro}. ` : '';
+    this.playGuideAttentionChime();
+    const cleanIntro = cleanTextForIndonesianSpeech(intro);
+    const cleanQuestion = cleanTextForIndonesianSpeech(question);
+    const formattedIntro = cleanIntro ? `${cleanIntro}. ` : '';
     const formattedOptions = options
-      .map((opt, i) => `Pilihan ${String.fromCharCode(65 + i)}: ${opt.text}`)
+      .map((opt, i) => `Pilihan ${String.fromCharCode(65 + i)}: ${cleanTextForIndonesianSpeech(opt.text)}`)
       .join('. ');
-    const fullText = `Halo sahabat juara! Dengarkan Uciel ya. ${formattedIntro} Pertanyaannya: ${question}. Pilihan jawaban: ${formattedOptions}. Pilih jawaban yang paling tepat ya!`;
+    const fullText = `Hai sahabat juara! Dengarkan Uciel ya! ${formattedIntro} Pertanyaannya: ${cleanQuestion}. ${formattedOptions}. Mana pilihanmu? Yuk jawab sekarang!`;
     this.speak(fullText, key, onEnd);
   },
 
   /**
-   * Suara Pemandu Maskot Uciel: Membaca teks narasi dengan sintesis Web Speech ramah anak
+   * Suara Pemandu Maskot Uciel: Membaca teks narasi dengan lonceng perhatian ceria
    */
   speakGuide(text: string, onEnd?: () => void) {
-    this.speak(text, onEnd);
+    this.playGuideAttentionChime();
+    const cleaned = cleanTextForIndonesianSpeech(text);
+    this.speak(cleaned, onEnd);
   },
 
   stopSpeaking() {
