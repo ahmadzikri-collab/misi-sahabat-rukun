@@ -80,16 +80,14 @@ export const PancasilaEmblem: React.FC<PancasilaEmblemProps> = ({
         className={`relative inline-flex items-center justify-center flex-shrink-0 ${selectedSize} ${className}`}
         title={`Lambang Sila ke-${silaNumber}: ${cardData.name}`}
       >
-        <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-sm border border-black/15 bg-white p-1 flex items-center justify-center transition-transform">
-          <img
-            src={cardData.src}
-            alt={cardData.alt}
-            onError={() => setImgLoadFailed(true)}
-            className="w-full h-full object-contain rounded-xl select-none"
-            loading="eager"
-            draggable={false}
-          />
-        </div>
+        <img
+          src={cardData.src}
+          alt={cardData.alt}
+          onError={() => setImgLoadFailed(true)}
+          className="w-full h-full object-contain filter drop-shadow-sm select-none rounded-2xl transition-transform"
+          loading="eager"
+          draggable={false}
+        />
       </div>
     );
   }

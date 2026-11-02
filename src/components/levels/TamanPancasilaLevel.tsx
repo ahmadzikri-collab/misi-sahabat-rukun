@@ -51,17 +51,17 @@ interface TamanPancasilaLevelProps {
 const PANCASILA_SYMBOLS = [
   {
     silaNumber: 1,
-    symbolName: 'Bintang Emas (Kartu Hitam)',
+    symbolName: 'Bintang Emas',
     silaTitle: 'Sila ke-1',
     silaText: 'Ketuhanan Yang Maha Esa',
-    shieldDesc: 'Bintang emas bersudut 5 di atas kartu persegi hitam legam',
+    shieldDesc: 'Bintang emas bersudut lima di atas kartu persegi hitam',
     meaning: 'Percaya kepada Tuhan YME dan saling menghormati perbedaan agama teman.',
     color: 'from-amber-400 to-yellow-500',
     borderColor: 'border-yellow-400',
   },
   {
     silaNumber: 2,
-    symbolName: 'Rantai Emas (Kartu Merah)',
+    symbolName: 'Rantai Emas',
     silaTitle: 'Sila ke-2',
     silaText: 'Kemanusiaan yang Adil dan Beradab',
     shieldDesc: 'Mata rantai emas saling menyambung di atas kartu persegi merah',
@@ -71,7 +71,7 @@ const PANCASILA_SYMBOLS = [
   },
   {
     silaNumber: 3,
-    symbolName: 'Pohon Beringin (Kartu Putih)',
+    symbolName: 'Pohon Beringin',
     silaTitle: 'Sila ke-3',
     silaText: 'Persatuan Indonesia',
     shieldDesc: 'Pohon beringin rindang hijau berakar gantung di atas kartu persegi putih',
@@ -81,7 +81,7 @@ const PANCASILA_SYMBOLS = [
   },
   {
     silaNumber: 4,
-    symbolName: 'Kepala Banteng (Kartu Merah)',
+    symbolName: 'Kepala Banteng',
     silaTitle: 'Sila ke-4',
     silaText: 'Kerakyatan yang Dipimpin oleh Hikmat Kebijaksanaan...',
     shieldDesc: 'Kepala banteng hitam bertanduk gagah di atas kartu persegi merah',
@@ -91,7 +91,7 @@ const PANCASILA_SYMBOLS = [
   },
   {
     silaNumber: 5,
-    symbolName: 'Padi dan Kapas (Kartu Putih)',
+    symbolName: 'Padi dan Kapas',
     silaTitle: 'Sila ke-5',
     silaText: 'Keadilan Sosial bagi Seluruh Rakyat Indonesia',
     shieldDesc: 'Setangkai padi emas & kapas putih hijau di atas kartu persegi putih',
@@ -271,10 +271,12 @@ export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
   const [selectedSymbol, setSelectedSymbol] = useState<number | null>(null);
   const [matchedPairs, setMatchedPairs] = useState<number[]>([]);
   const [symbolAttempts, setSymbolAttempts] = useState(0);
+  const [mismatchSila, setMismatchSila] = useState<number | null>(null);
 
   const handleReshuffleCards = () => {
     soundManager.playDialoguePop();
     setSelectedSymbol(null);
+    setMismatchSila(null);
     setShuffledSymbols(shuffleArray(PANCASILA_SYMBOLS));
     setShuffledSilas(shuffleArray(PANCASILA_SYMBOLS));
     setCustomGuideText('🔀 Kartu berhasil diacak ulang! Ayo pasangkan simbol dan silanya!');
@@ -305,10 +307,19 @@ export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
   const handleSelectSymbol = (silaNum: number) => {
     soundManager.playClick();
     if (matchedPairs.includes(silaNum)) return;
+    
+    // Toggle unselect if clicking already selected card
+    if (selectedSymbol === silaNum) {
+      setSelectedSymbol(null);
+      setGuideEmotion('idle');
+      setCustomGuideText('Pilih salah satu lambang di kolom kiri untuk dipasangkan ya!');
+      return;
+    }
+
     setSelectedSymbol(silaNum);
     setGuideEmotion('thinking');
     const symbolInfo = PANCASILA_SYMBOLS.find((s) => s.silaNumber === silaNum);
-    setCustomGuideText(`Kamu memilih simbol ${symbolInfo?.symbolName}. Sekarang, ketuk Sila Pancasila yang cocok ya!`);
+    setCustomGuideText(`✨ Kamu memilih lambang ${symbolInfo?.symbolName}. Sekarang, ketuk bunyi Sila Pancasila yang cocok di sebelah kanan ya!`);
   };
 
   // Handle sila card selection for matching
@@ -324,11 +335,12 @@ export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
       const newMatches = [...matchedPairs, silaNum];
       setMatchedPairs(newMatches);
       setSelectedSymbol(null);
+      setMismatchSila(null);
       setGuideEmotion('happy');
 
       const matchedItem = PANCASILA_SYMBOLS.find((s) => s.silaNumber === silaNum);
       setCustomGuideText(
-        `⭐ Hebat! Simbol ${matchedItem?.symbolName} cocok sekali dengan ${matchedItem?.silaTitle}: "${matchedItem?.silaText}".`
+        `⭐ Hebat! Lambang ${matchedItem?.symbolName} cocok sekali dengan ${matchedItem?.silaTitle}: "${matchedItem?.silaText}".`
       );
 
       // Check if all 5 are matched
@@ -336,15 +348,21 @@ export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
         soundManager.playCelebration();
         setTimeout(() => {
           setGuideEmotion('happy');
-          setCustomGuideText('🌟 Luar biasa! Seluruh simbol sila Pancasila berhasil dicocokkan! Sekarang mari selesaikan misi cerita!');
-        }, 1200);
+          setCustomGuideText('🌟 Luar biasa! Seluruh 5 lambang Sila Pancasila berhasil dicocokkan! Sekarang mari lanjutkan ke misi cerita sahabat rukun!');
+        }, 1000);
       }
     } else {
       // MISMATCH
+      setMismatchSila(silaNum);
       soundManager.playEncourage();
       setGuideEmotion('encouraging');
-      setCustomGuideText('Belum tepat sahabat. Jangan menyerah, yuk perhatikan lambang dan silanya lagi!');
-      setSelectedSymbol(null);
+      const selectedItem = PANCASILA_SYMBOLS.find((s) => s.silaNumber === selectedSymbol);
+      const clickedSila = PANCASILA_SYMBOLS.find((s) => s.silaNumber === silaNum);
+      setCustomGuideText(`💡 Belum tepat sahabat. Lambang ${selectedItem?.symbolName} belum cocok dengan ${clickedSila?.silaTitle}. Yuk perhatikan lambang dan bunyinya lagi!`);
+      setTimeout(() => {
+        setMismatchSila(null);
+        setSelectedSymbol(null);
+      }, 1000);
     }
   };
 
@@ -569,13 +587,14 @@ export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
             animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-3xl p-4 sm:p-7 shadow-lg border-2 border-amber-200 space-y-5"
           >
-            <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-gray-100">
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 rounded-full bg-red-100 text-red-700 font-extrabold text-xs">
+            {/* Mission Header & Controls */}
+            <div className="flex items-center justify-between flex-wrap gap-3 pb-3 border-b border-gray-100">
+              <div className="flex items-center gap-2.5">
+                <span className="px-3 py-1 rounded-full bg-red-100 text-red-700 font-black text-xs uppercase tracking-wider">
                   Misi 1 dari 2
                 </span>
                 <h2 className="text-base sm:text-xl font-black text-gray-800">
-                  Mencocokkan Simbol & Sila Pancasila
+                  Mencocokkan Lambang & Sila Pancasila
                 </h2>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
@@ -583,49 +602,116 @@ export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
                   type="button"
                   onClick={() => setShowEmblemGuide(true)}
                   title="Lihat detail lambang asli Garuda Pancasila"
-                  className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-red-100 hover:bg-red-200 text-red-900 border border-red-300 font-black text-xs transition-colors shadow-xs active:scale-95"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-900 border border-red-200 font-black text-xs transition-colors shadow-xs active:scale-95"
                 >
-                  <Info className="w-3.5 h-3.5 text-red-700" />
-                  <span>Lambang Asli</span>
+                  <Info className="w-3.5 h-3.5 text-red-600" />
+                  <span>Panduan Lambang Asli</span>
                 </button>
                 <button
                   type="button"
                   onClick={handleReshuffleCards}
                   title="Acak ulang posisi kartu simbol dan sila"
-                  className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 font-black text-xs transition-colors shadow-xs active:scale-95"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-black text-xs transition-colors shadow-xs active:scale-95"
                 >
                   <Shuffle className="w-3.5 h-3.5 text-amber-700" />
-                  <span>Acak Kartu</span>
+                  <span>Acak Posisi</span>
                 </button>
-                <span className="text-xs font-bold text-gray-500">Tercocokkan:</span>
-                <span className="px-2.5 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 font-black text-sm">
-                  {matchedPairs.length} / 5
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-900 font-black text-xs sm:text-sm">
+                  <span>Tercocokkan:</span>
+                  <span className="text-emerald-700">{matchedPairs.length} / 5</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Visual Token Tracker (Sila 1-5 Status) */}
+            <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-black text-gray-600 uppercase tracking-wide">
+                  Progres 5 Sila Pancasila:
+                </span>
+                <span className="text-xs font-bold text-gray-500">
+                  {matchedPairs.length === 5 ? '🎉 Semua Selesai!' : `${5 - matchedPairs.length} Sila tersisa`}
                 </span>
               </div>
-            </div>
-
-            {/* Instruction Banner */}
-            <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-2 text-xs sm:text-sm text-amber-900 font-bold">
-              <div className="flex items-center gap-2">
-                <span>💡</span>
-                <span>(1) Ketuk Kartu Simbol Asli ➡️ (2) Ketuk Sila Pancasila yang cocok. Urutan kartu diacak!</span>
+              <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
+                {[1, 2, 3, 4, 5].map((num) => {
+                  const isDone = matchedPairs.includes(num);
+                  const symbolObj = PANCASILA_SYMBOLS.find((s) => s.silaNumber === num);
+                  return (
+                    <div
+                      key={`token-${num}`}
+                      className={`flex flex-col items-center justify-center p-1.5 sm:p-2 rounded-xl border text-center transition-all ${
+                        isDone
+                          ? 'bg-emerald-500 border-emerald-600 text-white shadow-xs font-black'
+                          : 'bg-white border-slate-200 text-gray-400 font-bold'
+                      }`}
+                    >
+                      <div className="text-xs sm:text-sm flex items-center gap-1">
+                        {isDone ? <span>✓</span> : <span>○</span>}
+                        <span>Sila {num}</span>
+                      </div>
+                      <span className="text-[10px] hidden sm:block truncate max-w-full opacity-90">
+                        {symbolObj?.symbolName}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
-              <span className="text-[11px] px-2 py-0.5 rounded-md bg-amber-200 text-amber-950 font-black flex items-center gap-1">
-                <Shuffle className="w-3 h-3" /> Mode Acak
-              </span>
             </div>
 
-            {/* Matching Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Left Column: Shuffled Symbol Cards */}
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs sm:text-sm font-extrabold text-gray-700 uppercase tracking-wide">
-                    Kartu Lambang Pancasila (Diacak):
-                  </h3>
-                  <span className="text-[10px] text-gray-400 font-semibold">Pilih satu lambang</span>
+            {/* Dynamic Interactive Guidance Banner */}
+            <div
+              className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 text-xs sm:text-sm font-bold transition-colors ${
+                selectedSymbol === null
+                  ? 'bg-amber-50 border-amber-300 text-amber-950'
+                  : 'bg-blue-50 border-blue-300 text-blue-950 shadow-xs'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{selectedSymbol === null ? '👈' : '👉'}</span>
+                <div>
+                  {selectedSymbol === null ? (
+                    <span>
+                      <strong className="text-amber-900">Langkah 1:</strong> Ketuk salah satu{' '}
+                      <strong>Kartu Lambang</strong> di kolom kiri untuk memilih.
+                    </span>
+                  ) : (
+                    <span>
+                      <strong className="text-blue-900">Langkah 2:</strong> Kamu memilih{' '}
+                      <span className="underline font-black">
+                        {PANCASILA_SYMBOLS.find((s) => s.silaNumber === selectedSymbol)?.symbolName}
+                      </span>
+                      . Sekarang ketuk <strong>Bunyi Sila Pancasila</strong> yang cocok di kolom kanan!
+                    </span>
+                  )}
                 </div>
-                <div className="grid grid-cols-1 gap-2.5">
+              </div>
+              {selectedSymbol !== null && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedSymbol(null)}
+                  className="px-2.5 py-1 rounded-lg bg-white/80 hover:bg-white text-gray-700 text-[11px] font-black border border-blue-200 flex-shrink-0"
+                >
+                  Batal Pilih
+                </button>
+              )}
+            </div>
+
+            {/* Matching Grid: Two Well-Spaced Interactive Columns */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+              {/* Left Column: Shuffled Symbol Cards */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between pb-1">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                    <h3 className="text-xs sm:text-sm font-black text-gray-800 uppercase tracking-wide">
+                      Kartu Lambang Garuda (Diacak)
+                    </h3>
+                  </div>
+                  <span className="text-[11px] text-gray-400 font-semibold">5 Lambang</span>
+                </div>
+
+                <div className="space-y-3">
                   {shuffledSymbols.map((sym) => {
                     const isMatched = matchedPairs.includes(sym.silaNumber);
                     const isSelected = selectedSymbol === sym.silaNumber;
@@ -636,43 +722,56 @@ export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
                         type="button"
                         disabled={isMatched}
                         onClick={() => handleSelectSymbol(sym.silaNumber)}
-                        className={`w-full text-left p-3 rounded-2xl border-2 flex items-center justify-between transition-all ${
+                        className={`w-full text-left p-3.5 sm:p-4 rounded-2xl border-2 flex items-center justify-between gap-3 transition-all ${
                           isMatched
-                            ? 'bg-emerald-50 border-emerald-300 opacity-60 cursor-default'
+                            ? 'bg-emerald-50/90 border-emerald-300 shadow-none cursor-default opacity-90'
                             : isSelected
-                            ? 'bg-amber-100 border-amber-500 scale-[1.02] shadow-md ring-2 ring-amber-400'
-                            : 'bg-white hover:bg-slate-50 border-gray-200 active:scale-[0.99] shadow-xs'
+                            ? 'bg-amber-50 border-amber-500 scale-[1.02] shadow-md ring-4 ring-amber-300/70'
+                            : 'bg-white hover:bg-slate-50 border-slate-200 hover:border-amber-400 active:scale-[0.99] shadow-xs cursor-pointer'
                         }`}
                       >
-                        <div className="flex items-center gap-3">
-                          <PancasilaEmblem silaNumber={sym.silaNumber} size="md" />
-                          <div>
-                            <div className="text-xs sm:text-sm font-black text-gray-900 flex items-center gap-1.5">
-                              {sym.symbolName}
-                              {isMatched && <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          {/* Sila Emblem with clean rounded styling */}
+                          <PancasilaEmblem
+                            silaNumber={sym.silaNumber}
+                            size="lg"
+                            className="flex-shrink-0"
+                          />
+
+                          <div className="min-w-0">
+                            <div className="text-sm sm:text-base font-black text-gray-900 flex items-center gap-1.5">
+                              <span>{sym.symbolName}</span>
+                              {isMatched && <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />}
                             </div>
-                            <div className="text-[11px] text-gray-500 font-semibold line-clamp-1">
+                            <div className="text-xs text-gray-500 font-semibold line-clamp-1 mt-0.5">
                               {sym.shieldDesc}
+                            </div>
+                            <div className="mt-1.5 flex items-center gap-2">
+                              {isMatched ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-black text-[11px]">
+                                  ✓ Cocok (Sila ke-{sym.silaNumber})
+                                </span>
+                              ) : isSelected ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-amber-500 text-white font-black text-[11px] animate-pulse">
+                                  ✨ Terpilih - Ketuk Sila di Kanan
+                                </span>
+                              ) : (
+                                <span className="text-[11px] text-amber-700 font-bold">
+                                  Ketuk untuk memilih
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
                           <VoiceReadButton
-                            text={`Simbol ${sym.symbolName}. ${sym.shieldDesc}. Makna: ${sym.meaning}`}
+                            text={`Lambang ${sym.symbolName}. ${sym.shieldDesc}. ${sym.meaning}`}
                             speechKey={`sym-audio-${sym.silaNumber}`}
                             variant="icon"
-                            size="xs"
-                            title={`Dengarkan penjelasan simbol ${sym.symbolName}`}
+                            size="sm"
+                            title={`Dengarkan penjelasan lambang ${sym.symbolName}`}
                           />
-                          {isSelected && !isMatched && (
-                            <span className="px-2 py-0.5 text-[11px] font-black rounded-md bg-amber-500 text-white animate-pulse">
-                              Dipilih
-                            </span>
-                          )}
-                          {isMatched && (
-                            <span className="text-xs font-black text-emerald-600">✓ Selesai</span>
-                          )}
                         </div>
                       </button>
                     );
@@ -681,16 +780,21 @@ export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
               </div>
 
               {/* Right Column: Shuffled Sila Text Cards */}
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs sm:text-sm font-extrabold text-gray-600 uppercase tracking-wide">
-                    Sila Pancasila (Diacak):
-                  </h3>
-                  <span className="text-[10px] text-gray-400 font-semibold">Cocokkan bunyi sila</span>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between pb-1">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                    <h3 className="text-xs sm:text-sm font-black text-gray-800 uppercase tracking-wide">
+                      Bunyi Sila Pancasila (Diacak)
+                    </h3>
+                  </div>
+                  <span className="text-[11px] text-gray-400 font-semibold">5 Sila</span>
                 </div>
-                <div className="grid grid-cols-1 gap-2.5">
+
+                <div className="space-y-3">
                   {shuffledSilas.map((sila) => {
                     const isMatched = matchedPairs.includes(sila.silaNumber);
+                    const isMismatch = mismatchSila === sila.silaNumber;
 
                     return (
                       <button
@@ -698,34 +802,60 @@ export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
                         type="button"
                         disabled={isMatched || selectedSymbol === null}
                         onClick={() => handleSelectSila(sila.silaNumber)}
-                        className={`w-full text-left p-3 rounded-2xl border-2 flex items-center justify-between transition-all ${
+                        className={`w-full text-left p-3.5 sm:p-4 rounded-2xl border-2 flex items-center justify-between gap-3 transition-all ${
                           isMatched
-                            ? 'bg-emerald-50 border-emerald-300 opacity-60 cursor-default'
+                            ? 'bg-emerald-50/90 border-emerald-300 shadow-none cursor-default opacity-90'
+                            : isMismatch
+                            ? 'bg-rose-50 border-rose-400 ring-4 ring-rose-200 animate-bounce'
                             : selectedSymbol !== null
-                            ? 'bg-white hover:bg-amber-50 border-amber-300 active:scale-[0.99] shadow-sm cursor-pointer'
-                            : 'bg-gray-50 border-gray-200 opacity-80 cursor-not-allowed'
+                            ? 'bg-white hover:bg-amber-50/70 border-amber-300 hover:border-amber-500 active:scale-[0.99] shadow-sm cursor-pointer ring-1 ring-amber-200'
+                            : 'bg-slate-50 border-slate-200 opacity-75 cursor-not-allowed'
                         }`}
                       >
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="px-2 py-0.5 rounded-md bg-red-100 text-red-800 font-extrabold text-[11px]">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="px-2.5 py-0.5 rounded-md bg-red-100 text-red-800 font-black text-xs">
                               {sila.silaTitle}
                             </span>
+                            {isMatched && (
+                              <span className="text-[11px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>Cocok!</span>
+                              </span>
+                            )}
+                            {isMismatch && (
+                              <span className="text-[11px] font-black text-rose-700 bg-rose-100 px-2 py-0.5 rounded-md">
+                                Belum Tepat!
+                              </span>
+                            )}
                           </div>
-                          <div className="text-xs sm:text-sm font-bold text-gray-800 mt-1">
+
+                          <div className="text-xs sm:text-sm font-black text-gray-900 leading-snug">
                             "{sila.silaText}"
                           </div>
+
+                          {selectedSymbol !== null && !isMatched && (
+                            <div className="mt-1 text-[11px] font-bold text-amber-700 flex items-center gap-1">
+                              <span>👆 Ketuk untuk pasangkan dengan lambang terpilih</span>
+                            </div>
+                          )}
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {isMatched && (
+                            <PancasilaEmblem
+                              silaNumber={sila.silaNumber}
+                              size="sm"
+                              className="opacity-90"
+                            />
+                          )}
                           <VoiceReadButton
                             text={`${sila.silaTitle}: ${sila.silaText}`}
                             speechKey={`sila-audio-${sila.silaNumber}`}
                             variant="icon"
-                            size="xs"
+                            size="sm"
                             title={`Dengarkan bunyi ${sila.silaTitle}`}
                           />
-                          {isMatched && <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />}
                         </div>
                       </button>
                     );
@@ -734,26 +864,39 @@ export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
               </div>
             </div>
 
-            {/* Button to proceed once 5 pairs matched */}
+            {/* Completion Banner once all 5 pairs matched */}
             {matchedPairs.length === 5 && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="pt-3 text-center"
+                className="pt-4 p-5 rounded-3xl bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-xl text-center space-y-3"
               >
-                <button
-                  type="button"
-                  onClick={() => {
-                    soundManager.playClick();
-                    setCurrentStep('scenarios');
-                    setGuideEmotion('talking');
-                    setCustomGuideText('Hebat! Sekarang bantulah Uciel dan teman-teman menyelesaikan cerita hidup rukun di sekolah.');
-                  }}
-                  className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-base shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2 mx-auto"
-                >
-                  <span>Lanjut ke Misi 2: Kisah Sahabat Rukun</span>
-                  <ArrowRight className="w-5 h-5" />
-                </button>
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-xs text-2xl">
+                  🌟
+                </div>
+                <div>
+                  <h3 className="text-lg sm:text-xl font-black">
+                    Luar Biasa! Semua 5 Lambang Pancasila Berhasil Dipasangkan!
+                  </h3>
+                  <p className="text-xs sm:text-sm text-emerald-100 font-semibold max-w-lg mx-auto mt-1">
+                    Kamu telah mengenali Bintang Emas, Rantai Emas, Pohon Beringin, Kepala Banteng, dan Padi Kapas dengan tepat. Ayo lanjut ke kisah kerukunan di sekolah!
+                  </p>
+                </div>
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      soundManager.playClick();
+                      setCurrentStep('scenarios');
+                      setGuideEmotion('talking');
+                      setCustomGuideText('Hebat! Sekarang bantulah Uciel dan teman-teman menyelesaikan cerita hidup rukun di sekolah.');
+                    }}
+                    className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-white text-emerald-900 font-black text-sm sm:text-base shadow-lg hover:bg-emerald-50 active:scale-95 transition-transform flex items-center justify-center gap-2 mx-auto"
+                  >
+                    <span>Lanjut ke Misi 2: Kisah Sahabat Rukun</span>
+                    <ArrowRight className="w-5 h-5 text-emerald-700" />
+                  </button>
+                </div>
               </motion.div>
             )}
           </motion.div>
