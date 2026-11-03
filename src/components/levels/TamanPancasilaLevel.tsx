@@ -722,41 +722,43 @@ export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
                         type="button"
                         disabled={isMatched}
                         onClick={() => handleSelectSymbol(sym.silaNumber)}
-                        className={`w-full text-left p-3.5 sm:p-4 rounded-2xl border-2 flex items-center justify-between gap-3 transition-all ${
+                        className={`w-full text-left p-2.5 sm:p-3 rounded-2xl border-2 flex items-center justify-between gap-2.5 min-h-[74px] sm:min-h-[78px] transition-all ${
                           isMatched
                             ? 'bg-emerald-50/90 border-emerald-300 shadow-none cursor-default opacity-90'
                             : isSelected
-                            ? 'bg-amber-50 border-amber-500 scale-[1.02] shadow-md ring-4 ring-amber-300/70'
+                            ? 'bg-amber-50 border-amber-500 scale-[1.01] shadow-md ring-3 ring-amber-300/80'
                             : 'bg-white hover:bg-slate-50 border-slate-200 hover:border-amber-400 active:scale-[0.99] shadow-xs cursor-pointer'
                         }`}
                       >
-                        <div className="flex items-center gap-3.5 min-w-0">
-                          {/* Sila Emblem with clean rounded styling */}
-                          <PancasilaEmblem
-                            silaNumber={sym.silaNumber}
-                            size="lg"
-                            className="flex-shrink-0"
-                          />
+                        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+                          {/* Sila Emblem - ukuran diperkecil & proporsional */}
+                          <div className="flex-shrink-0 p-0.5 rounded-xl bg-slate-50 border border-slate-200/90 shadow-2xs">
+                            <PancasilaEmblem
+                              silaNumber={sym.silaNumber}
+                              size="md"
+                              className="rounded-lg"
+                            />
+                          </div>
 
-                          <div className="min-w-0">
-                            <div className="text-sm sm:text-base font-black text-gray-900 flex items-center gap-1.5">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-xs sm:text-sm font-black text-gray-900 flex items-center gap-1.5 leading-tight">
                               <span>{sym.symbolName}</span>
-                              {isMatched && <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />}
+                              {isMatched && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />}
                             </div>
-                            <div className="text-xs text-gray-500 font-semibold line-clamp-1 mt-0.5">
+                            <div className="text-[11px] text-gray-500 font-medium line-clamp-1 mt-0.5">
                               {sym.shieldDesc}
                             </div>
-                            <div className="mt-1.5 flex items-center gap-2">
+                            <div className="mt-1 flex items-center gap-1.5">
                               {isMatched ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-black text-[11px]">
-                                  ✓ Cocok (Sila ke-{sym.silaNumber})
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-black text-[10px]">
+                                  ✓ Cocok (Sila {sym.silaNumber})
                                 </span>
                               ) : isSelected ? (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-amber-500 text-white font-black text-[11px] animate-pulse">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500 text-white font-black text-[10px] animate-pulse">
                                   ✨ Terpilih - Ketuk Sila di Kanan
                                 </span>
                               ) : (
-                                <span className="text-[11px] text-amber-700 font-bold">
+                                <span className="text-[10px] text-amber-700 font-bold">
                                   Ketuk untuk memilih
                                 </span>
                               )}
@@ -764,12 +766,12 @@ export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <div className="flex items-center gap-1 flex-shrink-0">
                           <VoiceReadButton
                             text={`Lambang ${sym.symbolName}. ${sym.shieldDesc}. ${sym.meaning}`}
                             speechKey={`sym-audio-${sym.silaNumber}`}
                             variant="icon"
-                            size="sm"
+                            size="xs"
                             title={`Dengarkan penjelasan lambang ${sym.symbolName}`}
                           />
                         </div>
@@ -802,7 +804,7 @@ export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
                         type="button"
                         disabled={isMatched || selectedSymbol === null}
                         onClick={() => handleSelectSila(sila.silaNumber)}
-                        className={`w-full text-left p-3.5 sm:p-4 rounded-2xl border-2 flex items-center justify-between gap-3 transition-all ${
+                        className={`w-full text-left p-2.5 sm:p-3 rounded-2xl border-2 flex items-center justify-between gap-2.5 min-h-[74px] sm:min-h-[78px] transition-all ${
                           isMatched
                             ? 'bg-emerald-50/90 border-emerald-300 shadow-none cursor-default opacity-90'
                             : isMismatch
@@ -814,46 +816,48 @@ export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
                       >
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="px-2.5 py-0.5 rounded-md bg-red-100 text-red-800 font-black text-xs">
+                            <span className="px-2 py-0.5 rounded-md bg-red-100 text-red-800 font-black text-[11px]">
                               {sila.silaTitle}
                             </span>
                             {isMatched && (
-                              <span className="text-[11px] font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                              <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                                 <span>Cocok!</span>
                               </span>
                             )}
                             {isMismatch && (
-                              <span className="text-[11px] font-black text-rose-700 bg-rose-100 px-2 py-0.5 rounded-md">
+                              <span className="text-[10px] font-black text-rose-700 bg-rose-100 px-1.5 py-0.5 rounded-md">
                                 Belum Tepat!
                               </span>
                             )}
                           </div>
 
-                          <div className="text-xs sm:text-sm font-black text-gray-900 leading-snug">
+                          <div className="text-xs sm:text-sm font-black text-gray-900 leading-snug line-clamp-2">
                             "{sila.silaText}"
                           </div>
 
                           {selectedSymbol !== null && !isMatched && (
-                            <div className="mt-1 text-[11px] font-bold text-amber-700 flex items-center gap-1">
-                              <span>👆 Ketuk untuk pasangkan dengan lambang terpilih</span>
+                            <div className="mt-1 text-[10px] font-bold text-amber-700 flex items-center gap-1">
+                              <span>👆 Ketuk untuk pasangkan</span>
                             </div>
                           )}
                         </div>
 
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
                           {isMatched && (
-                            <PancasilaEmblem
-                              silaNumber={sila.silaNumber}
-                              size="sm"
-                              className="opacity-90"
-                            />
+                            <div className="p-0.5 rounded-lg bg-emerald-100 border border-emerald-300">
+                              <PancasilaEmblem
+                                silaNumber={sila.silaNumber}
+                                size="xs"
+                                className="rounded-md"
+                              />
+                            </div>
                           )}
                           <VoiceReadButton
                             text={`${sila.silaTitle}: ${sila.silaText}`}
                             speechKey={`sila-audio-${sila.silaNumber}`}
                             variant="icon"
-                            size="sm"
+                            size="xs"
                             title={`Dengarkan bunyi ${sila.silaTitle}`}
                           />
                         </div>
