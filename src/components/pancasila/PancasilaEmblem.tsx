@@ -1,7 +1,20 @@
 import React, { useState } from 'react';
+import sila1Img from '../../assets/pancasila/sila1_bintang.png';
+import sila2Img from '../../assets/pancasila/sila2_rantai.png';
+import sila3Img from '../../assets/pancasila/sila3_beringin.png';
+import sila4Img from '../../assets/pancasila/sila4_banteng.png';
+import sila5Img from '../../assets/pancasila/sila5_padi_kapas.png';
+import {
+  PANCASILA_B64_1,
+  PANCASILA_B64_2,
+  PANCASILA_B64_3,
+  PANCASILA_B64_4,
+  PANCASILA_B64_5,
+} from '../../assets/pancasilaBase64';
 
 export interface PancasilaCardAsset {
   src: string;
+  fallbackB64: string;
   alt: string;
   name: string;
   bgColor: string;
@@ -10,35 +23,40 @@ export interface PancasilaCardAsset {
 
 export const PANCASILA_CARDS_MAP: Record<number, PancasilaCardAsset> = {
   1: {
-    src: '/assets/pancasila/sila1_bintang.png',
+    src: sila1Img || PANCASILA_B64_1,
+    fallbackB64: PANCASILA_B64_1,
     alt: 'Bintang Emas (Sila ke-1)',
     name: 'Bintang Emas',
     bgColor: 'bg-neutral-900',
     borderColor: 'border-neutral-800',
   },
   2: {
-    src: '/assets/pancasila/sila2_rantai.png',
+    src: sila2Img || PANCASILA_B64_2,
+    fallbackB64: PANCASILA_B64_2,
     alt: 'Rantai Emas (Sila ke-2)',
     name: 'Rantai Emas',
     bgColor: 'bg-red-600',
     borderColor: 'border-red-700',
   },
   3: {
-    src: '/assets/pancasila/sila3_beringin.png',
+    src: sila3Img || PANCASILA_B64_3,
+    fallbackB64: PANCASILA_B64_3,
     alt: 'Pohon Beringin (Sila ke-3)',
     name: 'Pohon Beringin',
     bgColor: 'bg-white',
     borderColor: 'border-slate-400',
   },
   4: {
-    src: '/assets/pancasila/sila4_banteng.png',
+    src: sila4Img || PANCASILA_B64_4,
+    fallbackB64: PANCASILA_B64_4,
     alt: 'Kepala Banteng (Sila ke-4)',
     name: 'Kepala Banteng',
     bgColor: 'bg-red-600',
     borderColor: 'border-red-700',
   },
   5: {
-    src: '/assets/pancasila/sila5_padi_kapas.png',
+    src: sila5Img || PANCASILA_B64_5,
+    fallbackB64: PANCASILA_B64_5,
     alt: 'Padi dan Kapas (Sila ke-5)',
     name: 'Padi dan Kapas',
     bgColor: 'bg-white',
@@ -61,6 +79,8 @@ export const PancasilaEmblem: React.FC<PancasilaEmblemProps> = ({
   variant = 'card',
   className = '',
 }) => {
+  const cardData = PANCASILA_CARDS_MAP[silaNumber];
+  const [imgSrc, setImgSrc] = useState<string>(cardData?.src || cardData?.fallbackB64 || '');
   const [imgLoadFailed, setImgLoadFailed] = useState(false);
 
   const sizeMap = {
@@ -71,7 +91,14 @@ export const PancasilaEmblem: React.FC<PancasilaEmblemProps> = ({
   };
 
   const selectedSize = sizeMap[size] || sizeMap.md;
-  const cardData = PANCASILA_CARDS_MAP[silaNumber];
+
+  const handleImageError = () => {
+    if (cardData && imgSrc !== cardData.fallbackB64) {
+      setImgSrc(cardData.fallbackB64);
+    } else {
+      setImgLoadFailed(true);
+    }
+  };
 
   // RENDER CARD IMAGE (Sesuai gambar kartu lambang Pancasila yang dikirim pengguna)
   if (variant === 'card' && cardData && !imgLoadFailed) {
@@ -81,9 +108,9 @@ export const PancasilaEmblem: React.FC<PancasilaEmblemProps> = ({
         title={`Lambang Sila ke-${silaNumber}: ${cardData.name}`}
       >
         <img
-          src={cardData.src}
+          src={imgSrc}
           alt={cardData.alt}
-          onError={() => setImgLoadFailed(true)}
+          onError={handleImageError}
           className="w-full h-full object-contain filter drop-shadow-sm select-none rounded-2xl transition-transform"
           loading="eager"
           draggable={false}
