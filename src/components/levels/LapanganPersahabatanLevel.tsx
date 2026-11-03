@@ -14,21 +14,13 @@ import { EmotionState, StudentProfile } from '../../types/game';
 import { soundManager } from '../../utils/audio';
 import { gameDb } from '../../services/db';
 import { StudentReflectionModal } from '../StudentReflectionModal';
+import { getVariedOptions, shuffleArray } from '../../utils/quiz';
 
 interface LapanganPersahabatanLevelProps {
   student?: StudentProfile | null;
   studentName?: string;
   onCompleteLevel: (result: { stars: number; score: number; xp: number }) => void;
   onBackToMap: () => void;
-}
-
-function shuffleArray<T>(array: T[]): T[] {
-  const arr = [...array];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
 }
 
 const PJOK_CHALLENGES = [
@@ -123,7 +115,7 @@ export const LapanganPersahabatanLevel: React.FC<LapanganPersahabatanLevelProps>
   const uciel = getUcielForLocation('lapangan-persahabatan');
   const currentChallenge = PJOK_CHALLENGES[challengeIdx];
   const currentShuffledOptions = React.useMemo(() => {
-    return shuffleArray(currentChallenge.options);
+    return getVariedOptions(currentChallenge.options, challengeIdx, quizSeed);
   }, [challengeIdx, currentChallenge.id, quizSeed]);
 
   const handleSelectOption = (opt: { id: string; text: string; isCorrect: boolean; feedback: string }) => {

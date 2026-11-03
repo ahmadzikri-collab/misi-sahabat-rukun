@@ -14,21 +14,13 @@ import { soundManager } from '../../utils/audio';
 import { gameDb } from '../../services/db';
 import { createSafeImageErrorHandler } from '../../utils/assets';
 import { StudentReflectionModal } from '../StudentReflectionModal';
+import { getVariedOptions, shuffleArray } from '../../utils/quiz';
 
 interface KantinPintarLevelProps {
   student?: StudentProfile | null;
   studentName?: string;
   onCompleteLevel: (result: { stars: number; score: number; xp: number }) => void;
   onBackToMap: () => void;
-}
-
-function shuffleArray<T>(array: T[]): T[] {
-  const arr = [...array];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
 }
 
 const MATH_CHALLENGES = [
@@ -128,7 +120,7 @@ export const KantinPintarLevel: React.FC<KantinPintarLevelProps> = ({
   const uciel = getUcielForLocation('kantin-pintar');
   const currentChallenge = MATH_CHALLENGES[challengeIdx];
   const currentShuffledOptions = React.useMemo(() => {
-    return shuffleArray(currentChallenge.options);
+    return getVariedOptions(currentChallenge.options, challengeIdx, quizSeed);
   }, [challengeIdx, currentChallenge.id, quizSeed]);
 
   const handleSelectOption = (opt: { id: string; text: string; isCorrect: boolean; feedback: string }) => {

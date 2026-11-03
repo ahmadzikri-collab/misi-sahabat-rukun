@@ -17,14 +17,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 
-function shuffleArray<T>(array: T[]): T[] {
-  const arr = [...array];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
+import { getVariedOptions, shuffleArray } from '../../utils/quiz';
 import { GuideCharacter } from '../character/GuideCharacter';
 import { VoiceReadButton } from '../audio/VoiceReadButton';
 import { QuestionVoiceBanner } from '../audio/QuestionVoiceBanner';
@@ -291,7 +284,7 @@ export const TamanPancasilaLevel: React.FC<TamanPancasilaLevelProps> = ({
 
   const currentScenario = SCENARIOS[scenarioIndex];
   const currentShuffledScenarioOptions = React.useMemo(() => {
-    return shuffleArray(currentScenario.options);
+    return getVariedOptions(currentScenario.options, scenarioIndex, quizSeed);
   }, [scenarioIndex, currentScenario.id, quizSeed]);
 
   // Character emotional dialogue control
