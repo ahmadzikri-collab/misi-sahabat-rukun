@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8">
+    <title>Misi Sahabat Rukun</title>
+    <script>
+      // Single Page Apps for GitHub Pages redirect
+      // Path redirection logic for subpath SPA hosting
+      sessionStorage.redirect = location.href;
+      var path = location.pathname;
+      var repo = path.split('/')[1] || '';
+      if (repo && !repo.includes('.')) {
+        location.replace('/' + repo + '/');
+      } else {
+        location.replace('./');
+      }
+    </script>
+  </head>
+  <body>
+    <p>Memuat Misi Sahabat Rukun...</p>
+  </body>
+</html>

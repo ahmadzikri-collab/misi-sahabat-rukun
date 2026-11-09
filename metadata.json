@@ -1,0 +1,6 @@
+{
+  "name": "Misi Sahabat Rukun - Game Edukasi Kelas 2 SD",
+  "description": "Game edukasi petualangan bertema Hidup Rukun di Sekolah untuk siswa kelas 2 SD dengan dashboard monitoring guru dan sinkronisasi Cloud Firestore.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
